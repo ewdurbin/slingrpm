@@ -1,0 +1,6 @@
+*.sw*
+*.pyc
+build
+lib
+bin
+include
