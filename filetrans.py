@@ -1,10 +1,6 @@
-#!/usr/bin/python2
-
 import zmq 
 from zmq.core.error import ZMQError, ZMQBindError
 import os.path
-import os
-import sys
 
 """
 Variant on thatch45's zmg file_get and file_serve
@@ -62,15 +58,17 @@ class SlingerFileServer:
       print "ERROR"
 
     file = sock.recv()
+    error = 0
     if not os.path.isfile(file):
       sock.send('NO FILE')
+      error = 1
+    if not os.path.dirname(file).startswith(self.servedir):
+      sock.send('CANNOT SERVE THAT')
+      error = 1
+    if error:
       havemorefile = False
       sock.close()
       return
-    if not os.path.dirname(file).startswith(self.servedir):
-      sock.send('CANNOT SERVE THAT')
-      havemorefile = False
-      sock.close()
  
     fn = open(os.path.abspath(file), 'rb')
     print 'SRV: opening file'
