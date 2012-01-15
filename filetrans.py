@@ -1,9 +1,14 @@
 #!/usr/bin/python2
 
 import zmq 
+from zmq.core.error import ZMQError, ZMQBindError
 import os.path
 import os
 import sys
+
+"""
+Variant on thatch45's zmg file_get and file_serve
+"""
 
 class CatcherFilePuller:
   def __init__(self, destpath, srcpath, host, port):
@@ -15,56 +20,67 @@ class CatcherFilePuller:
     self.destpath = destpath
 
   def get_file(self):
-    dest = open(self.destpath, 'w+')
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     buildserver = 'tcp://%s:%s' % (self.host, self.port)
     socket.connect(buildserver)
     socket.send(self.srcpath)
-  
-    while True:
-        data = socket.recv()
-        dest.write(data)
-        if not socket.getsockopt(zmq.RCVMORE):
-            break
+    
+    data = socket.recv()
+    if data == 'NO FILE':
+      print data
+      raise Exception
+    if data == 'CANNOT SERVE THAT':
+      print data
+      raise Exception
+
+    print 'GET: opening file for writing'
+    dest = open(self.destpath, 'w+')  
+    dest.write(data)
+    filetowrite = True
+    while filetowrite:
+      data = socket.recv()
+      dest.write(data)
+      if not socket.getsockopt(zmq.RCVMORE):
+        print 'GET: done with file'
+        filetowrite = False
+        socket.close()
+        break
 
 class SlingerFileServer:
-  def __init__(self, startingport, range):
-    self.startingport = startingport
-    self.range = range
+  def __init__(self, servedir='/'):
+    self.servedir = os.path.abspath(servedir)
 
   def serve(self):
     context = zmq.Context(1)
     sock = context.socket(zmq.REP)
     
-    port = self.startingport
-    serverstring = 'tcp://*:%s' % (port)
-    maxport = self.startingport + self.range
-    while port < maxport:
-      try:
-        sock.bind(serverstring)
-        print port
-        break
-      except:
-        port = port + 1 
-  
-    # Start the server loop
-    while True:
-      msg = sock.recv()
-      if not os.path.isfile(msg):
-        print "NO LUCK SIR"
-        sock.send('')
-        continue
-      print "SERVING %s" % msg
-      fn = open(msg, 'rb')
-      stream = True
-      # Start reading in the file
-      while stream:
-        # Read the file bit by bit
-        stream = fn.read(128)
-        if stream:
-          # If the stream has more to send then send more
-          sock.send(stream, zmq.SNDMORE)
-        else:
-            # Finish it off
-            sock.send(stream)
+    try:
+      port = sock.bind_to_random_port('tcp://*', 64000, 65000, 100)
+      print port
+    except:
+      print "ERROR"
+
+    file = sock.recv()
+    if not os.path.isfile(file):
+      sock.send('NO FILE')
+      havemorefile = False
+      sock.close()
+      return
+    if not os.path.dirname(file).startswith(self.servedir):
+      sock.send('CANNOT SERVE THAT')
+      havemorefile = False
+      sock.close()
+ 
+    fn = open(os.path.abspath(file), 'rb')
+    print 'SRV: opening file'
+
+    stream = True 
+    while stream:
+      stream = fn.read(128)
+      if stream:
+        sock.send(stream, zmq.SNDMORE)
+      else:
+        sock.send(stream)
+        fn.close()
+        print 'SRV: closing file'
