@@ -20,29 +20,32 @@ class CatcherFilePuller:
     socket = context.socket(zmq.REQ)
     buildserver = 'tcp://%s:%s' % (self.host, self.port)
     socket.connect(buildserver)
-    socket.send(self.srcpath)
-    
-    data = socket.recv()
-    if data == 'NO FILE':
+
+    msg = {'loc': 0,
+           'path': self.srcpath}
+
+    print 'Sending check message'
+    socket.send_pyobj(msg)
+    data = socket.recv_pyobj()
+    if data['body'] == 'NO FILE':
       print data
       raise Exception
-    if data == 'CANNOT SERVE THAT':
+    if data['body'] == 'CANNOT SERVE THAT':
       print data
       raise Exception
 
     print 'GET: opening file for writing'
     dest = open(self.destpath, 'w+')  
-    dest.write(data)
-    filetowrite = True
-    while filetowrite:
-      data = socket.recv()
-      dest.write(data)
-      if not socket.getsockopt(zmq.RCVMORE):
-        print 'GET: done with file'
-        filetowrite = False
-        socket.close()
-        break
-
+ 
+    while True:
+      socket.send_pyobj(msg)
+      data = socket.recv_pyobj()
+      if data['body']:
+        dest.write(data['body'])
+        msg['loc'] = dest.tell()
+      else:
+        break   
+ 
 class SlingerFileServer:
   def __init__(self, servedir='/'):
     self.servedir = os.path.abspath(servedir)
@@ -57,28 +60,29 @@ class SlingerFileServer:
     except:
       print "ERROR"
 
-    file = sock.recv()
-    error = 0
-    if not os.path.isfile(file):
-      sock.send('NO FILE')
-      error = 1
-    if not os.path.dirname(file).startswith(self.servedir):
-      sock.send('CANNOT SERVE THAT')
-      error = 1
-    if error:
-      havemorefile = False
+    file = sock.recv_pyobj()
+    if not os.path.isfile(file['path']):
+      print file['path']
+      sock.send_pyobj({'body': 'NO FILE'})
       sock.close()
       return
- 
-    fn = open(os.path.abspath(file), 'rb')
-    print 'SRV: opening file'
+    if not os.path.dirname(file['path']).startswith(self.servedir):
+      sock.send_pyobj({'body': 'CANNOT SERVE THAT'})
+      sock.close()
+      return
 
-    stream = True 
-    while stream:
-      stream = fn.read(128)
-      if stream:
-        sock.send(stream, zmq.SNDMORE)
-      else:
-        sock.send(stream)
-        fn.close()
-        print 'SRV: closing file'
+    sock.send_pyobj({'body': 'FILE INCOMING'})
+ 
+    BUFF = 32768 
+
+    while True:
+      ret = {}
+      msg = sock.recv_pyobj()
+      if not os.path.isfile(msg['path']):
+        sock.send_pyobj({'body': 'NO FILE'})
+        continue
+      fn = open(msg['path'], 'rb')
+      fn.seek(msg['loc'])
+      ret['body'] = fn.read(BUFF)
+      ret['loc'] = fn.tell()
+      sock.send_pyobj(ret)
