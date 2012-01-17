@@ -4,17 +4,16 @@ from urllib import urlopen
 class SlingRPM:
 
   def __init__(self, targetrepo=""):
-      response = urlopen(targetrepo + 'repodata/repomd.xml')
-      if response.getcode() != 200:
-	raise Exception
-      response = urlopen(targetrepo + '.slingrpm.conf')
-      if response.getcode() != 200:
-	raise Exception
-      self.targetpath = '/'
-      self.targetrepo = targetrepo
+    repomd = urlopen(targetrepo + 'repodata/repomd.xml')
+    if repomd.getcode() != 200:
+      raise Exception
 
-  def push(self):
-    pass
+    slingrpmconf = urlopen(targetrepo + '.slingrpm.conf')
+    if slingrpmconf.getcode() != 200:
+      raise Exception
+
+    self.targetpath = '/'
+    self.targetrepo = targetrepo
 
 import os.path
 
