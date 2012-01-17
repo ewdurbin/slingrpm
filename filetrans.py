@@ -1,6 +1,7 @@
 import zmq 
 from zmq.core.error import ZMQError, ZMQBindError
 import os.path
+import zlib
 
 """
 Variant on thatch45's zmg file_get2 and file_serve2
@@ -33,16 +34,24 @@ class CatcherFilePuller:
     if data['body'] == 'CANNOT SERVE THAT':
       print data
       raise Exception
+    if data['body'] == 'FILE INCOMING':
+      print 'GET: opening file for writing'
+      dest = open(self.destpath, 'w+')  
+    else:
+      raise Exception
 
-    print 'GET: opening file for writing'
-    dest = open(self.destpath, 'w+')  
- 
+    crc = 0 
     while True:
       socket.send_pyobj(msg)
       data = socket.recv_pyobj()
       if data['body']:
-        dest.write(data['body'])
-        msg['loc'] = dest.tell()
+        crcnew = zlib.crc32(data['body'], crc)
+        if crcnew == data['crc']:
+          crc = crcnew
+          dest.write(data['body'])
+          msg['loc'] = dest.tell()
+        else:
+          continue
       else:
         msg['loc'] = 'DONE'
         socket.send_pyobj(msg)
@@ -75,13 +84,16 @@ class SlingerFileServer:
 
     sock.send_pyobj({'body': 'FILE INCOMING'})
  
+    ret = {'body': None,
+           'loc': None,
+           'crc': 0}
     with FileHandler(file['path'], 32768) as fh:
       while True:
-        ret = {}
         msg = sock.recv_pyobj()
         if msg['loc'] == 'DONE':
           break
         ret['body'] = fh.read(msg['loc'])
+        ret['crc'] = zlib.crc32(ret['body'],ret['crc'])
         ret['loc'] = fh.tell()
         sock.send_pyobj(ret)
 
