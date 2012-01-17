@@ -3,7 +3,7 @@ from zmq.core.error import ZMQError, ZMQBindError
 import os.path
 
 """
-Variant on thatch45's zmg file_get and file_serve
+Variant on thatch45's zmg file_get2 and file_serve2
 """
 
 class CatcherFilePuller:
@@ -44,6 +44,8 @@ class CatcherFilePuller:
         dest.write(data['body'])
         msg['loc'] = dest.tell()
       else:
+        msg['loc'] = 'DONE'
+        socket.send_pyobj(msg)
         break   
  
 class SlingerFileServer:
@@ -73,16 +75,33 @@ class SlingerFileServer:
 
     sock.send_pyobj({'body': 'FILE INCOMING'})
  
-    BUFF = 32768 
+    with FileHandler(file['path'], 32768) as fh:
+      while True:
+        ret = {}
+        msg = sock.recv_pyobj()
+        if msg['loc'] == 'DONE':
+          break
+        ret['body'] = fh.read(msg['loc'])
+        ret['loc'] = fh.tell()
+        sock.send_pyobj(ret)
 
-    while True:
-      ret = {}
-      msg = sock.recv_pyobj()
-      if not os.path.isfile(msg['path']):
-        sock.send_pyobj({'body': 'NO FILE'})
-        continue
-      fn = open(msg['path'], 'rb')
-      fn.seek(msg['loc'])
-      ret['body'] = fn.read(BUFF)
-      ret['loc'] = fn.tell()
-      sock.send_pyobj(ret)
+class FileHandler:
+
+  def __init__(self, file, buffer=32768):
+    self.file_path = file
+    self.buffer = buffer
+    if os.path.isfile(file):
+      self.fd = open(self.file_path)
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    self.fd.close()
+
+  def read(self, loc):
+    self.fd.seek(loc)
+    return self.fd.read(self.buffer)
+
+  def tell(self):
+    return self.fd.tell()
