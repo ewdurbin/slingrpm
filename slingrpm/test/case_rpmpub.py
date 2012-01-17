@@ -1,13 +1,15 @@
-import shutil
-import time
-import os.path
+import sys
 import os
+import os.path
+sys.path.append(os.path.join(os.getcwd(),'slingrpm'))
+
+import shutil
 
 from testutils import TempServer
 
 import konira
 from slingrpm import SlingRPM
-from slingrpm import CatchRPM
+from catchrpm import CatchRPM
 
 def touch(filename, content="foo"):
   f = open(filename, 'w')

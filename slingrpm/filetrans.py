@@ -1,11 +1,6 @@
 import zmq 
-from zmq.core.error import ZMQError, ZMQBindError
 import os.path
 import zlib
-
-"""
-Variant on thatch45's zmg file_get2 and file_serve2
-"""
 
 class CatcherFilePuller:
   def __init__(self, destpath, srcpath, host, port):
@@ -56,7 +51,7 @@ class CatcherFilePuller:
         msg['loc'] = 'DONE'
         socket.send_pyobj(msg)
         break   
- 
+
 class SlingerFileServer:
   def __init__(self, servedir='/'):
     self.servedir = os.path.abspath(servedir)
@@ -103,17 +98,3 @@ class FileHandler:
     self.file_path = file
     self.buffer = buffer
     if os.path.isfile(file):
-      self.fd = open(self.file_path)
-
-  def __enter__(self):
-    return self
-
-  def __exit__(self, exc_type, exc_val, exc_tb):
-    self.fd.close()
-
-  def read(self, loc):
-    self.fd.seek(loc)
-    return self.fd.read(self.buffer)
-
-  def tell(self):
-    return self.fd.tell()
