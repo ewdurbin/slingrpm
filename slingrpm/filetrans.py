@@ -98,3 +98,18 @@ class FileHandler:
     self.file_path = file
     self.buffer = buffer
     if os.path.isfile(file):
+      self.fd = open(self.file_path)
+
+  def __enter__(self):
+    return self
+
+  def __exit__(self, exc_type, exc_val, exc_tb):
+    self.fd.close()
+
+  def read(self, loc):
+    self.fd.seek(loc)
+    return self.fd.read(self.buffer)
+
+  def tell(self):
+    return self.fd.tell()
+
