@@ -14,7 +14,7 @@ install requirements
 `pip install -r requirements/development.txt`
 
 get yourself setup for sling
-`source bin/activate`
+`source bin/sling`
 
 make sure tests run
 `konira`
