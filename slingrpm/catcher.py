@@ -1,7 +1,6 @@
-
 import os.path
 
-class CatchRPM:
+class Catcher:
 
   def __init__(self, targetrepo=""):
     if not os.path.isfile(os.path.join(targetrepo, '.slingrpm.conf')):

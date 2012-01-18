@@ -2,7 +2,7 @@ import os.path
 import ConfigParser
 import urllib
 
-class ConfigSling:
+class SlingConfig:
 
   def __init__(self, configlocation=None):
     self.repolocation = None
