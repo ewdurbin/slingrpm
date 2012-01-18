@@ -1,0 +1,21 @@
+desling () {
+    if [ -n "$_OLD_PYTHONPATH" ] ; then
+        PYTHONPATH=$"_OLD_PYTHONPATH"
+        export PYTHONPATH
+        unset _OLD_PYTHONPATH
+    fi
+
+    unalias konira
+    unset -f desling
+}
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+if [ -n "$PYTHONPATH" ] ; then
+    _OLD_PYTHONPATH="$PYTHONPYTHONPATH"
+    export PYTHONPATH="$DIR/../slingrpm:$_OLD_PYTHONPATH"
+fi
+
+alias konira="konira -s"
