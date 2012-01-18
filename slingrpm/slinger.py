@@ -1,6 +1,8 @@
 from urlparse import urlparse
 from urllib import urlopen
 
+import slingrpm
+
 class Slinger:
 
   def __init__(self, targetrepo=""):
@@ -8,9 +10,6 @@ class Slinger:
     if repomd.getcode() != 200:
       raise Exception
 
-    slingrpmconf = urlopen(targetrepo + '.slingrpm.conf')
-    if slingrpmconf.getcode() != 200:
-      raise Exception
-
-    self.targetpath = '/'
     self.targetrepo = targetrepo
+    self.config = slingrpm.SlingConfig()
+    self.config.read(self.targetrepo + '.slingrpm.conf')

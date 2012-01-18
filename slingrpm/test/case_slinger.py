@@ -3,7 +3,6 @@ import os.path
 
 import testutils
 from slingrpm import Slinger
-from slingrpm import SlingConfig
 
 describe "pushing rpms with Slinger":
 
@@ -32,17 +31,21 @@ describe "pushing rpms with Slinger":
     pusher = Slinger("http://localhost:" + self.httpport + "/testarea/repo/")
     assert pusher
 
-  it "can obtain a full path to the repository from .slingrpm.conf":
-    pusher = Slinger("http://localhost:" + self.httpport + "/testarea/repo/")
-    assert os.path.isdir(pusher.targetpath)
-
   it "remembers the repo it's been set to publish to":
     pusher = Slinger("http://localhost:" + self.httpport + "/testarea/repo/")
     assert pusher.targetrepo == "http://localhost:" + self.httpport + "/testarea/repo/"
 
-  it "reads configs from http or https locations":
-    config = SlingConfig("http://localhost:" + self.httpport + "/testarea/repo/.slingrpm.conf")
-    assert config
+  it "can obtain a full path to the repository from .slingrpm.conf":
+    pusher = Slinger("http://localhost:" + self.httpport + "/testarea/repo/")
+    assert os.path.isdir(pusher.config.repolocation)
+
+  it "can obtain a subdirectory in the repository for pushing packages into":
+    pusher = Slinger("http://localhost:" + self.httpport + "/testarea/repo/")
+    assert pusher.config.packagedir == os.path.join(pusher.config.repolocation, "")
+
+  it "can obtain a daemon port to bind to for communicating":
+    pusher = Slinger("http://localhost:" + self.httpport + "/testarea/repo/")
+    assert pusher.config.commport == str(64666)
 
   after each:
     pass

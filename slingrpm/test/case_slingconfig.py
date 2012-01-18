@@ -9,12 +9,19 @@ describe "working with the configuration file via SlingConfig":
 
   before all:
     testutils.setuprepos() 
+    self.server = testutils.TempServer()
+    self.httpport = str(self.server.port)
+    self.server.start()
 
   before each:
     pass
 
   it "accepts a full path to a valid repo for an .rpmsling.conf as an input":
     config = SlingConfig(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
+    assert config
+
+  it "reads configs from http locations":
+    config = SlingConfig("http://localhost:" + self.httpport + "/testarea/repo/.slingrpm.conf")
     assert config
 
   it "raises an Exception if the config file does not exist":
@@ -47,6 +54,5 @@ describe "working with the configuration file via SlingConfig":
     pass
 
   after all:
+    self.server.stop()
     testutils.teardownrepos() 
-
-
