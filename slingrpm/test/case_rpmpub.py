@@ -46,6 +46,10 @@ describe "working with the configuration file via ConfigSling":
     config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
     assert config.commport == "64666"
 
+  it "exposes a parameters for the createrepo script to run":
+    config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
+    assert config.createrepoopts == "--update --excludes .slingrpm.conf --checksum sha"
+
   after each:
     pass
 
@@ -76,7 +80,7 @@ describe "setting up a sling enabled repository with SetupSling":
 
   it "remembers the full path of the repository":
     repo = SetupSling('testarea/freshrepo')
-    assert repo.repolocation == os.path.join(os.getcwd(), 'testarea/freshrepo')
+    assert repo.config.repolocation == os.path.join(os.getcwd(), 'testarea/freshrepo')
 
   it "configures .slingrpm.conf to store the correct repoistory path":
     repo = SetupSling('testarea/freshrepo')

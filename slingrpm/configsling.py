@@ -7,6 +7,7 @@ class ConfigSling:
   def __init__(self, configlocation=None):
     self.repolocation = None
     self.packagedir = None
+    self.createrepoopts = None
     self.commport = None
     if configlocation:
       self.read(configlocation)
@@ -28,6 +29,7 @@ class ConfigSling:
       self.repolocation = self.config.get('SlingRPM', 'repolocation') 
       packagedir = self.config.get('SlingRPM', 'packagedir')
       self.packagedir = os.path.join(self.repolocation, packagedir)
+      self.createrepoopts = self.config.get('SlingRPM', 'createrepoopts')
       self.commport = self.config.get('SlingRPM', 'commport')
     except:
       raise
@@ -40,6 +42,7 @@ class ConfigSling:
     config.set('SlingRPM', 'repolocation', os.path.dirname(configlocation))
     config.set('SlingRPM', 'packagedir', 'packages')
     config.set('SlingRPM', 'commport', 64666)
+    config.set('SlingRPM', 'createrepoopts', '--update --excludes .slingrpm.conf --checksum sha')
     with open(configlocation, 'wb') as configfile:
       config.write(configfile)
     self.read(configlocation)

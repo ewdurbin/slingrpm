@@ -20,12 +20,12 @@ class SetupSling:
     fullrepopath = os.path.abspath(repopath)
     if not os.path.isdir(fullrepopath):
       raise NoRepoException('directory not found at: ' + fullrepopath)
-    if not os.path.isdir(os.path.join(fullrepopath, 'repodata')):
-      execute('createrepo ' + fullrepopath)
     if not os.path.isfile(os.path.join(fullrepopath, '.slingrpm.conf')):
-      config = ConfigSling()
-      config.new(os.path.join(fullrepopath, '.slingrpm.conf'))
+      self.config = ConfigSling()
+      self.config.new(os.path.join(fullrepopath, '.slingrpm.conf'))
+    if not os.path.isdir(os.path.join(fullrepopath, 'repodata')):
+      execute('createrepo ' + fullrepopath + " " +self.config.createrepoopts)
     else:
       raise AlreadySlingEnabledException('repo at : ' + fullrepopath + ' already sling enabled!')
 
-    self.repolocation = fullrepopath
+    self.config = ConfigSling(os.path.join(fullrepopath, '.slingrpm.conf'))

@@ -27,6 +27,7 @@ def setuprepos():
   config.set('SlingRPM', 'repolocation', os.path.abspath('testarea/repo')) 
   config.set('SlingRPM', 'packagedir', '')
   config.set('SlingRPM', 'commport', 64666) 
+  config.set('SlingRPM', 'createrepoopts', '--update --excludes .slingrpm.conf --checksum sha') 
   with open('testarea/repo/.slingrpm.conf', 'wb') as configfile:
     config.write(configfile)
 
