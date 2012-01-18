@@ -1,46 +1,23 @@
 import sys
-import os
 import os.path
-sys.path.append(os.path.join(os.getcwd(),'slingrpm'))
 
-import shutil
-
-from testutils import TempServer
+import testutils
 
 import konira
+
 from slingrpm import SlingRPM
 from catchrpm import CatchRPM
-
-def touch(filename, content="foo"):
-  f = open(filename, 'w')
-  f.write(content)
-  f.close()
-
-def setuprepos():
-  if os.path.isdir('testarea'):
-    shutil.rmtree('testarea')
-  os.makedirs('testarea/badrepo')
-  os.makedirs('testarea/repo/repodata')
-  os.makedirs('testarea/realrepo/repodata')
-
-  touch('testarea/repo/.slingrpm.conf')
-  touch('testarea/repo/repodata/repomd.xml')
-  touch('testarea/realrepo/repodata/repomd.xml')
-
-def teardownrepos():
-  if os.path.isdir('testarea'):
-    shutil.rmtree('testarea')
 
 describe "pushing a rpm package to our centralized repo":
 
   before all:
-    setuprepos()
-    self.server = TempServer()
+    testutils.setuprepos()
+    self.server = testutils.TempServer()
     self.server.start()
     
   after all:
     self.server.stop()
-    teardownrepos()
+    testutils.teardownrepos()
 
   it "throws an exception if you dont specify the repo":
     raises Exception: SlingRPM()
@@ -69,13 +46,13 @@ describe "pushing a rpm package to our centralized repo":
 describe "receiving a package":
  
   before all:
-    setuprepos()
+    testutils.setuprepos()
 
     self.badrepopath = os.path.join(os.getcwd(),'testarea/badrepo/')
     self.repopath = os.path.join(os.getcwd(),'testarea/repo/')
 
   after all:
-    teardownrepos()
+    testutils.teardownrepos()
  
   it "throws an exception if the specified repo is not on the filesystem":
     raises Exception: catcher = CatchRPM(targetrepo=self.badrepopath)
