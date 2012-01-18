@@ -18,3 +18,12 @@ get yourself setup for sling
 
 make sure tests run
 `konira`
+
+get the hell out of dev environment
+-----------------------------------
+
+unload sling stuff
+`desling`
+
+deactivate virtualenv
+`deactivate`
