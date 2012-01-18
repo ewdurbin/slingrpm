@@ -14,3 +14,15 @@ class SlingRPM:
 
     self.targetpath = '/'
     self.targetrepo = targetrepo
+
+class NoRepoException(Exception):
+  def __init__(self, value):
+    self.value = value
+  def __str__(self):
+    return repr(self.value)
+
+class AlreadySlingEnabledException(Exception):
+  def __init__(self, value):
+    self.value = value
+  def __str__(self):
+    return repr(self.value)

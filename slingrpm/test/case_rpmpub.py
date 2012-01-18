@@ -7,6 +7,38 @@ import konira
 
 from slingrpm import SlingRPM
 from catchrpm import CatchRPM
+from setupsling import SetupSling
+
+from slingrpm import NoRepoException
+from slingrpm import AlreadySlingEnabledException 
+
+describe "setting up a sling enabled repository":
+
+  before all:
+    pass
+
+  before each:
+    testutils.setuprepos() 
+ 
+  it "raises NoRepoException if target repo is not a directory which exists":
+    raises NoRepoException: repo = SetupSling('testarea/norepo')
+
+  it "sets up an empty repository if no repomd.xml exists":
+    repo = SetupSling('testarea/freshrepo')
+    assert os.path.isfile('testarea/freshrepo/repodata/repomd.xml')
+
+  it "sets up a .slingrpm.conf if none exists":
+    repo = SetupSling('testarea/freshrepo')
+    assert os.path.isfile('testarea/freshrepo/.slingrpm.conf')
+
+  it "raises AlreadySlingEnabledException if repo is already sling enabled":
+    raises AlreadySlingEnabledException: repo = SetupSling('testarea/repo')
+
+  after each:
+    testutils.teardownrepos()
+
+  after all:
+    pass
 
 describe "pushing a rpm package to our centralized repo":
 
@@ -14,11 +46,10 @@ describe "pushing a rpm package to our centralized repo":
     testutils.setuprepos()
     self.server = testutils.TempServer()
     self.server.start()
-    
-  after all:
-    self.server.stop()
-    testutils.teardownrepos()
 
+  before each:
+    pass
+    
   it "throws an exception if you dont specify the repo":
     raises Exception: SlingRPM()
 
@@ -43,6 +74,13 @@ describe "pushing a rpm package to our centralized repo":
     pusher = SlingRPM("http://localhost:65001/testarea/repo/")
     assert pusher.targetrepo == "http://localhost:65001/testarea/repo/"
 
+  after each:
+    pass
+
+  after all:
+    self.server.stop()
+    testutils.teardownrepos()
+
 describe "receiving a package":
  
   before all:
@@ -50,9 +88,6 @@ describe "receiving a package":
 
     self.badrepopath = os.path.join(os.getcwd(),'testarea/badrepo/')
     self.repopath = os.path.join(os.getcwd(),'testarea/repo/')
-
-  after all:
-    testutils.teardownrepos()
  
   it "throws an exception if the specified repo is not on the filesystem":
     raises Exception: catcher = CatchRPM(targetrepo=self.badrepopath)
@@ -61,6 +96,8 @@ describe "receiving a package":
     catcher = CatchRPM(targetrepo=self.repopath)
     assert catcher.targetrepo == self.repopath 
     
+  after all:
+    testutils.teardownrepos()
 
 
 

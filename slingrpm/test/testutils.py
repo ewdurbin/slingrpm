@@ -11,11 +11,10 @@ def touch(filename, content="foo"):
   f.close()
 
 def setuprepos():
-  if os.path.isdir('testarea'):
-    shutil.rmtree('testarea')
   os.makedirs('testarea/badrepo')
   os.makedirs('testarea/repo/repodata')
   os.makedirs('testarea/realrepo/repodata')
+  os.makedirs('testarea/freshrepo')
 
   touch('testarea/repo/.slingrpm.conf')
   touch('testarea/repo/repodata/repomd.xml')
