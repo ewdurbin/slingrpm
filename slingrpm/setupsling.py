@@ -1,6 +1,7 @@
 import os.path
 import sys
 import subprocess
+import ConfigParser
 
 from slingrpm import NoRepoException
 from slingrpm import AlreadySlingEnabledException 
@@ -20,8 +21,12 @@ class SetupSling:
     if not os.path.isdir(os.path.join(fullrepopath, 'repodata')):
       execute('createrepo ' + fullrepopath)
     if not os.path.isfile(os.path.join(fullrepopath, '.slingrpm.conf')):
-      fd = open(os.path.join(fullrepopath, '.slingrpm.conf'), 'w')
-      fd.write('foo')
-      fd.close()
+      config = ConfigParser.RawConfigParser()
+      config.add_section('SlingRPM')
+      config.set('SlingRPM', 'repolocation', fullrepopath)
+      with open(os.path.join(fullrepopath, '.slingrpm.conf'), 'wb') as configfile:
+        config.write(configfile)
     else:
       raise AlreadySlingEnabledException('repo at : ' + fullrepopath + ' already sling enabled!')
+
+    self.repolocation = fullrepopath

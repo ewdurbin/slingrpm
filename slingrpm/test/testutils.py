@@ -4,6 +4,7 @@ import shutil
 import multiprocessing
 import SimpleHTTPServer
 import SocketServer
+import ConfigParser
 
 def touch(filename, content="foo"):
   f = open(filename, 'w')
@@ -15,10 +16,18 @@ def setuprepos():
   os.makedirs('testarea/repo/repodata')
   os.makedirs('testarea/realrepo/repodata')
   os.makedirs('testarea/freshrepo')
+  os.makedirs('testarea/badconfrepo')
 
-  touch('testarea/repo/.slingrpm.conf')
+  touch('testarea/badconfrepo/.slingrpm.conf')
   touch('testarea/repo/repodata/repomd.xml')
   touch('testarea/realrepo/repodata/repomd.xml')
+
+  config = ConfigParser.RawConfigParser()
+  config.add_section('SlingRPM')
+  config.set('SlingRPM', 'repolocation', os.path.abspath('testarea/repo')) 
+  with open('testarea/repo/.slingrpm.conf', 'wb') as configfile:
+    config.write(configfile)
+
 
 def teardownrepos():
   if os.path.isdir('testarea'):
@@ -44,4 +53,7 @@ class TempServer:
   def stop(self):
     self.d.terminate()
     self.d.join()
- 
+
+if __name__ == "__main__":
+  teardownrepos()
+  setuprepos()

@@ -1,16 +1,40 @@
+import konira
+import testutils
 import sys
 import os.path
-
-import testutils
-
-import konira
+import ConfigParser
 
 from slingrpm import SlingRPM
 from catchrpm import CatchRPM
 from setupsling import SetupSling
+from configsling import ConfigSling
 
 from slingrpm import NoRepoException
 from slingrpm import AlreadySlingEnabledException 
+
+describe "working with the SlingRPM configuration":
+
+   before all:
+     testutils.setuprepos() 
+
+   before each:
+     pass
+
+   it "accepts a full path for an .rpmsling.conf as an input":
+     config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
+     assert config
+
+   it "raises an Exception if the config file does not exist":
+     raises Exception: config = ConfigSling(os.path.join(os.getcwd(), 'testarea/norepo', '.slingrpm.conf'))
+
+   it "raises an Exception if the config file is not a valid .slingrpm.conf":
+     raises Exception: config = ConfigSling(os.path.join(os.getcwd(), 'testarea/badconfrepo', '.slingrpm.conf')) 
+
+   after each:
+     pass
+
+   after all:
+     testutils.teardownrepos() 
 
 describe "setting up a sling enabled repository":
 
@@ -33,6 +57,16 @@ describe "setting up a sling enabled repository":
 
   it "raises AlreadySlingEnabledException if repo is already sling enabled":
     raises AlreadySlingEnabledException: repo = SetupSling('testarea/repo')
+
+  it "remembers the full path of the repository":
+    repo = SetupSling('testarea/freshrepo')
+    assert repo.repolocation == os.path.join(os.getcwd(), 'testarea/freshrepo')
+
+  it "configures .slingrpm.conf to store the correct repoistory path":
+    repo = SetupSling('testarea/freshrepo')
+    config = ConfigParser.RawConfigParser()
+    config.read(os.path.join(os.getcwd(), 'testarea/freshrepo', '.slingrpm.conf'))
+    assert os.path.join(os.getcwd(), 'testarea/freshrepo') == config.get('SlingRPM', 'repolocation')
 
   after each:
     testutils.teardownrepos()
@@ -88,6 +122,9 @@ describe "receiving a package":
 
     self.badrepopath = os.path.join(os.getcwd(),'testarea/badrepo/')
     self.repopath = os.path.join(os.getcwd(),'testarea/repo/')
+
+  before each:
+    pass
  
   it "throws an exception if the specified repo is not on the filesystem":
     raises Exception: catcher = CatchRPM(targetrepo=self.badrepopath)
@@ -95,6 +132,9 @@ describe "receiving a package":
   it "remembers the path to the targetrepo":
     catcher = CatchRPM(targetrepo=self.repopath)
     assert catcher.targetrepo == self.repopath 
+
+  after each:
+    pass
     
   after all:
     testutils.teardownrepos()
