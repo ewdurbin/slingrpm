@@ -3,5 +3,5 @@
 build
 lib
 include
-TempServer.log
+slingrpm/test/TempServer.log
 execute.log

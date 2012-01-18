@@ -26,7 +26,7 @@ def teardownrepos():
 
 class TempHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
   def log_message(self, format, *args):
-    with open("TempServer.log", "a") as logfile:
+    with open("slingrpm/test/TempServer.log", "a") as logfile:
       logfile.write(format % args)
       logfile.write("\n")
 
