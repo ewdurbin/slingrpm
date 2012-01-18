@@ -2,11 +2,8 @@
 
 import os.path
 import sys
-base_dir = os.path.dirname(__file__)
-package_dir = os.path.join(base_dir, '..', 'slingrpm')
-sys.path.insert(0, package_dir)
 
-from filetrans import SlingerFileServer 
+from slingrpm import SlingerFileServer 
 
 server = SlingerFileServer(sys.argv[1])
 server.serve()
