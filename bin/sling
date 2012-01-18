@@ -15,7 +15,7 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 if [ -n "$PYTHONPATH" ] ; then
     _OLD_PYTHONPATH="$PYTHONPYTHONPATH"
-    export PYTHONPATH="$DIR/../slingrpm:$_OLD_PYTHONPATH"
 fi
+export PYTHONPATH="$DIR/../slingrpm:$_OLD_PYTHONPATH"
 
 alias konira="konira -s"
