@@ -25,6 +25,8 @@ def setuprepos():
   config = ConfigParser.RawConfigParser()
   config.add_section('SlingRPM')
   config.set('SlingRPM', 'repolocation', os.path.abspath('testarea/repo')) 
+  config.set('SlingRPM', 'packagedir', '')
+  config.set('SlingRPM', 'commport', 64666) 
   with open('testarea/repo/.slingrpm.conf', 'wb') as configfile:
     config.write(configfile)
 
@@ -43,7 +45,14 @@ class TempServer:
 
   def __init__(self):
     self.handler = TempHandler 
-    self.httpd = SocketServer.TCPServer(("127.0.0.1", 65001), self.handler)
+    port = 64000
+    while port < 65000:
+      try:
+        self.httpd = SocketServer.TCPServer(("127.0.0.1", port), self.handler)
+        break
+      except:
+       port = port + 1
+    self.port = port
 
   def start(self):
     self.d = multiprocessing.Process(name='serve', target=self.httpd.serve_forever)

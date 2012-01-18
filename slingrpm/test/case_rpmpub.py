@@ -12,31 +12,47 @@ from configsling import ConfigSling
 from slingrpm import NoRepoException
 from slingrpm import AlreadySlingEnabledException 
 
-describe "working with the SlingRPM configuration":
+describe "working with the configuration file via ConfigSling":
 
-   before all:
-     testutils.setuprepos() 
+  before all:
+    testutils.setuprepos() 
 
-   before each:
-     pass
+  before each:
+    pass
 
-   it "accepts a full path for an .rpmsling.conf as an input":
-     config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
-     assert config
+  it "accepts a full path to a valid repo for an .rpmsling.conf as an input":
+    config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
+    assert config
 
-   it "raises an Exception if the config file does not exist":
-     raises Exception: config = ConfigSling(os.path.join(os.getcwd(), 'testarea/norepo', '.slingrpm.conf'))
+  it "raises an Exception if the config file does not exist":
+    raises Exception: config = ConfigSling(os.path.join(os.getcwd(), 'testarea/norepo', '.slingrpm.conf'))
 
-   it "raises an Exception if the config file is not a valid .slingrpm.conf":
-     raises Exception: config = ConfigSling(os.path.join(os.getcwd(), 'testarea/badconfrepo', '.slingrpm.conf')) 
+  it "raises an Exception if the config file is not a valid ConfigParser config":
+    raises Exception: config = ConfigSling(os.path.join(os.getcwd(), 'testarea/badconfrepo', '.slingrpm.conf')) 
 
-   after each:
-     pass
+  it "exposes the full path to the config":
+    config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
+    assert config.configlocation == os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf')
 
-   after all:
-     testutils.teardownrepos() 
+  it "exposes the full path to the repository":
+    config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
+    assert config.repolocation == os.path.join(os.getcwd(), 'testarea/repo')
 
-describe "setting up a sling enabled repository":
+  it "exposes the subdirectory for uploaded packages":
+    config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
+    assert config.packagedir == os.path.join(os.getcwd(), 'testarea/repo/')
+
+  it "exposes a port to bind to for communicating":
+    config = ConfigSling(os.path.join(os.getcwd(), 'testarea/repo', '.slingrpm.conf'))
+    assert config.commport == "64666"
+
+  after each:
+    pass
+
+  after all:
+    testutils.teardownrepos() 
+
+describe "setting up a sling enabled repository with SetupSling":
 
   before all:
     pass
@@ -64,9 +80,8 @@ describe "setting up a sling enabled repository":
 
   it "configures .slingrpm.conf to store the correct repoistory path":
     repo = SetupSling('testarea/freshrepo')
-    config = ConfigParser.RawConfigParser()
-    config.read(os.path.join(os.getcwd(), 'testarea/freshrepo', '.slingrpm.conf'))
-    assert os.path.join(os.getcwd(), 'testarea/freshrepo') == config.get('SlingRPM', 'repolocation')
+    config = ConfigSling('testarea/freshrepo/.slingrpm.conf')
+    assert config
 
   after each:
     testutils.teardownrepos()
@@ -79,6 +94,7 @@ describe "pushing a rpm package to our centralized repo":
   before all:
     testutils.setuprepos()
     self.server = testutils.TempServer()
+    self.httpport = str(self.server.port)
     self.server.start()
 
   before each:
@@ -91,22 +107,26 @@ describe "pushing a rpm package to our centralized repo":
     raises Exception: pusher = SlingRPM(targetrepo="/foo/bar/bazz/")
 
   it "throws an exception if the specified repo is not a yum repo":
-    raises Exception: pusher = SlingRPM(targetrepo="http://localhost:65001/testarea/badrepo/")
+    raises Exception: pusher = SlingRPM(targetrepo="http://localhost:" + self.httpport + "/testarea/badrepo/")
 
   it "throws an exception if the specified repo is not setup for slingrpm":
-    raises Exception: pusher = SlingRPM(targetrepo="http://localhost:65001/testarea/realrepo/")
+    raises Exception: pusher = SlingRPM(targetrepo="http://localhost:" + self.httpport + "/testarea/realrepo/")
 
   it "likes repos with a repmod and slingrpm":
-    pusher = SlingRPM("http://localhost:65001/testarea/repo/")
+    pusher = SlingRPM("http://localhost:" + self.httpport + "/testarea/repo/")
     assert pusher
 
   it "can obtain a full path to the repository from .slingrpm.conf":
-    pusher = SlingRPM("http://localhost:65001/testarea/repo/")
+    pusher = SlingRPM("http://localhost:" + self.httpport + "/testarea/repo/")
     assert os.path.isdir(pusher.targetpath)
 
   it "remembers the repo it's been set to publish to":
-    pusher = SlingRPM("http://localhost:65001/testarea/repo/")
-    assert pusher.targetrepo == "http://localhost:65001/testarea/repo/"
+    pusher = SlingRPM("http://localhost:" + self.httpport + "/testarea/repo/")
+    assert pusher.targetrepo == "http://localhost:" + self.httpport + "/testarea/repo/"
+
+  it "reads configs from http or https locations":
+    config = ConfigSling("http://localhost:" + self.httpport + "/testarea/repo/.slingrpm.conf")
+    assert config
 
   after each:
     pass
