@@ -79,12 +79,13 @@ class SlingerFileServerProcess(Process):
       while True:
         msg = self.socket.recv_pyobj()
         if msg['loc'] == 'DONE':
-         break
+          break
         ret['body'] = fh.read(msg['loc'])
         ret['crc'] = zlib.crc32(ret['body'],ret['crc'])
         ret['loc'] = fh.tell()
   
-    self.socket.send_pyobj(ret)
+        self.socket.send_pyobj(ret)
+
     self.socket.close()
 
   def get_port(self):

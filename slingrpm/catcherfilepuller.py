@@ -20,17 +20,13 @@ class CatcherFilePuller:
     msg = {'loc': 0,
            'path': self.srcpath}
 
-    print 'Sending check message'
     socket.send_pyobj(msg)
     data = socket.recv_pyobj()
     if data['body'] == 'NO FILE':
-      print data
       raise Exception
     if data['body'] == 'CANNOT SERVE THAT':
-      print data
       raise Exception
     if data['body'] == 'FILE INCOMING':
-      print 'GET: opening file for writing'
       dest = open(self.destpath, 'w+')  
     else:
       raise Exception
