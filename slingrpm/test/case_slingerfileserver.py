@@ -15,67 +15,9 @@ def testclient(port, msg):
   socket = context.socket(zmq.REQ)
   socket.connect('tcp://%s:%s' % ('127.0.0.1', port))
 
-  print "sending message"
   socket.send_pyobj(msg)
 
   return socket.recv_pyobj()
-
-def client():
-  context1 = zmq.Context()
-
-  socket1 = context1.socket(zmq.REQ)
-  socket1.connect('tcp://%s:%s' % ('localhost', 64500))
-  print "connected to tcp://127.0.0.1:64500" 
-  
-  print "client: begin send obj"
-  msg = {'from': 1}
-  socket1.send_pyobj(msg)
-  print "client: end send obj"
-
-  print "client: begin recv obj"
-  print socket1.recv_pyobj() 
-  print "client: end recv obj"
-
-  socket1.close()
-
-class serverProcess(Process):
-  def __init__(self):
-    super(serverProcess, self).__init__() 
-    self.context0 = zmq.Context(1)
-    self.socket0 = self.context0.socket(zmq.REP)
-    self.socket0.bind('tcp://*:64500')
-    print "bound to 64500" 
-
-  def run(self):
-    print "server: begin recv obj"
-    print self.socket0.recv_pyobj()
-    print "server: end recv obj"
-  
-    print "server: begin send obj"
-    msg = {'from': 0}
-    self.socket0.send_pyobj(msg)
-    print "server: end send obj"
-  
-    self.socket0.close()
-
-def server():
-  context0 = zmq.Context(1)
-
-  socket0 = context0.socket(zmq.REP)
-  socket0.bind('tcp://*:64500')
-  print "bound to 64500" 
-
-  print "server: begin recv obj"
-  print socket0.recv_pyobj()
-  print "server: end recv obj"
-
-  print "server: begin send obj"
-  msg = {'from': 0}
-  socket0.send_pyobj(msg)
-  print "server: end send obj"
-
-  socket0.close()
-
 
 describe "receiving a package with SlingerFileServer":
  
@@ -94,37 +36,30 @@ describe "receiving a package with SlingerFileServer":
 
   it "has a serve method which returns a nonzero port for valid directory":
     server = SlingerFileServer('testarea/repo') 
-    assert server.port != 0
+    assert server.port != 0 
 
-  it "runs a useless test":
-    c = Process(target=client)
-    print c.is_alive()
-  
-    s = serverProcess()
-    print s.is_alive()
-  
-    c.daemon = True
-    print c.daemon
-    s.daemon = True
-    print s.daemon
-  
-    c.start()
-    print c.is_alive()
-  
-    s.start()
-    print s.is_alive()
-  
-    c.join()
-    s.join()
-    assert True == True
+  it "accepts a message asking for a file as path , and responds with FILE INCOMING if file exists":
+    server = SlingerFileServer('testarea/repo')
+    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
+    data = testclient(server.port, msg) 
+    assert data['body'] == "FILE INCOMING"
+    msg = {'loc': 'DONE', 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
+    data = testclient(server.port, msg) 
+    server.stop()
 
-#  it "accepts a message asking for a file as path , and responds with FILE INCOMING if file exists":
-#    server = SlingerFileServer('testarea/repo')
-#    server.start()
-#    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
-#    data = testclient(server.port, msg) 
-#    assert data['body'] == "FILE INCOMING"
-#    server.stop()
+  it "accepts a message asking for a file as path , and responds with NO FILE if file does not exist":
+    server = SlingerFileServer('testarea/repo')
+    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/norepo/.slingrpm.conf')}
+    data = testclient(server.port, msg) 
+    assert data['body'] == "NO FILE"
+    server.stop()
+
+  it "accepts a message asking for a file as path , and responds with CANNOT SERVE THAT if file is outside of servedir":
+    server = SlingerFileServer('testarea/repo')
+    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), '/etc/hosts')}
+    data = testclient(server.port, msg) 
+    assert data['body'] == "CANNOT SERVE THAT"
+    server.stop()
 
   after each:
     pass

@@ -1,5 +1,7 @@
 import zmq
 from multiprocessing import Process
+from multiprocessing import Pipe
+from multiprocessing import Queue 
 import sys
 import os.path
 import zlib
@@ -26,9 +28,27 @@ class FileHandler:
     return self.fd.tell()
 
 class SlingerFileServerProcess(Process):
+
+  all_open_parent_conns = []
+
   def __init__(self, servedir):
     super(SlingerFileServerProcess, self).__init__()
     self.servedir = servedir
+
+    self.daemon = True
+    self.port = None 
+
+    self.child_conn, self.parent_conn = Pipe(duplex = False)
+    SlingerFileServerProcess.all_open_parent_conns.append(self.parent_conn)
+    self.port_queue = Queue(1)
+
+    self.start()
+    self.child_conn.close()
+
+  def run(self):
+    for conn in SlingerFileServerProcess.all_open_parent_conns:
+      conn.close()
+
     self.context = zmq.Context(1)  
     self.socket = self.context.socket(zmq.REP)
     try:
@@ -36,16 +56,16 @@ class SlingerFileServerProcess(Process):
     except:
       raise
     self.port = port
+    self.port_queue.put(self.port)
+    self.port_queue.close()
+    self.child_conn.close()
 
-  def run(self):
-    print "server: begin recv obj"
     file = self.socket.recv_pyobj()
-    print "server: end recv obj"
     if not os.path.isfile(file['path']):
       self.socket.send_pyobj({'body': 'NO FILE'})
       self.socket.close()
       return
-    if not os.path.dirname(file['path']).startswith(self.ervedir):
+    if not os.path.dirname(file['path']).startswith(self.servedir):
       self.socket.send_pyobj({'body': 'CANNOT SERVE THAT'})
       self.socket.close()
       return
@@ -67,6 +87,10 @@ class SlingerFileServerProcess(Process):
     self.socket.send_pyobj(ret)
     self.socket.close()
 
+  def get_port(self):
+    self.parent_conn.close()
+    return self.port_queue.get()
+
 class SlingerFileServer:
 
   def __init__(self, servedir='/'):
@@ -75,14 +99,8 @@ class SlingerFileServer:
     else:
       raise Exception 
     self.proc = SlingerFileServerProcess(self.servedir) 
-    self.proc.daemon = True
-    self.port = self.proc.port
-
-  def start(self):
-    self.proc.start()
+    self.port = self.proc.get_port()
 
   def stop(self):
-    self.proc.socket.setsockopt(zmq.LINGER, -1)
-    self.proc.socket.close()
     self.proc.join()
 
