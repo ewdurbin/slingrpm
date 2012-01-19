@@ -6,4 +6,6 @@ import sys
 from slingrpm import SlingerFileServer 
 
 server = SlingerFileServer(sys.argv[1])
-server.serve()
+server.start()
+print server.port
+server.stop()
