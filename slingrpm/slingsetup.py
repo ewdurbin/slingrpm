@@ -23,9 +23,9 @@ class SlingSetup:
     if not os.path.isfile(os.path.join(fullrepopath, '.slingrpm.conf')):
       self.config = SlingConfig()
       self.config.new(os.path.join(fullrepopath, '.slingrpm.conf'))
-    if not os.path.isdir(os.path.join(fullrepopath, 'repodata')):
-      execute('createrepo ' + fullrepopath + " " +self.config.createrepoopts)
     else:
       raise AlreadySlingEnabledException('repo at : ' + fullrepopath + ' already sling enabled!')
+    if not os.path.isdir(os.path.join(fullrepopath, 'repodata')):
+      execute('createrepo ' + fullrepopath + " " +self.config.createrepoopts)
 
     self.config = SlingConfig(os.path.join(fullrepopath, '.slingrpm.conf'))

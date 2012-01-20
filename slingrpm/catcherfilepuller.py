@@ -60,7 +60,7 @@ class CatcherFilePullerProcess(Process):
     if self.check_file() == 'FILE INCOMING':
       self.get_file()
       while self.status_queue.empty():
-        time.sleep(.01)
+        time.sleep(.001)
       self.socket.close()
       return
     else:

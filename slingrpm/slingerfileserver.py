@@ -104,7 +104,7 @@ class SlingerFileServer:
   def start(self):
     self.proc.start()
     while self.port_queue.empty():
-      time.sleep(.01)
+      time.sleep(.001)
     self.port = self.port_queue.get()
 
   def stop(self):

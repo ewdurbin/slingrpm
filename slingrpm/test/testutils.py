@@ -15,13 +15,15 @@ def touch(filename, content="foo"):
 def setuprepos():
   os.makedirs('testarea/badrepo')
   os.makedirs('testarea/repo/repodata')
-  os.makedirs('testarea/realrepo/repodata')
+  os.makedirs('testarea/realrepo')
   os.makedirs('testarea/freshrepo')
   os.makedirs('testarea/badconfrepo')
 
-  touch('testarea/badconfrepo/.slingrpm.conf')
   touch('testarea/repo/repodata/repomd.xml')
-  touch('testarea/realrepo/repodata/repomd.xml')
+  touch('testarea/badconfrepo/.slingrpm.conf')
+
+  shutil.copyfile('slingrpm/test/empty-0-0.i386.rpm', 'testarea/repo/empty-0-0.i386.rpm')
+  shutil.copyfile('slingrpm/test/empty-0-0.i386.rpm', 'testarea/realrepo/empty-0-0.i386.rpm')
 
   config = ConfigParser.RawConfigParser()
   config.add_section('SlingRPM')

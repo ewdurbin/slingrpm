@@ -23,6 +23,10 @@ describe "setting up a sling enabled repository with SlingSetup":
     repo = SlingSetup('testarea/freshrepo')
     assert os.path.isfile('testarea/freshrepo/repodata/repomd.xml')
 
+  it "sets up repository metadata if no repomd.xml exists":
+    repo = SlingSetup('testarea/realrepo')
+    assert os.path.isfile('testarea/realrepo/repodata/repomd.xml')
+
   it "sets up a .slingrpm.conf if none exists":
     repo = SlingSetup('testarea/freshrepo')
     assert os.path.isfile('testarea/freshrepo/.slingrpm.conf')
