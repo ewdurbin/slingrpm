@@ -29,7 +29,7 @@ class CatcherFilePuller:
     if data['body'] == 'FILE INCOMING':
       dest = open(self.destpath, 'w+')  
     else:
-      raise Exception
+      raise Exception # pragma: no cover
 
     crc = 0 
     while True:
@@ -41,7 +41,7 @@ class CatcherFilePuller:
           crc = crcnew
           dest.write(data['body'])
           msg['loc'] = dest.tell()
-        else:
+        else: # pragma: no cover
           continue
       else:
         msg['loc'] = 'DONE'

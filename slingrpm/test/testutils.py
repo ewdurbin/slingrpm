@@ -2,6 +2,7 @@ import sys
 import os.path
 import shutil
 import multiprocessing
+import zmq
 import SimpleHTTPServer
 import SocketServer
 import ConfigParser
@@ -31,6 +32,18 @@ def setuprepos():
   with open('testarea/repo/.slingrpm.conf', 'wb') as configfile:
     config.write(configfile)
 
+def send_msg_get_rsp(port, msg):
+  context = zmq.Context()
+  socket = context.socket(zmq.REQ)
+  socket.connect('tcp://%s:%s' % ('127.0.0.1', port))
+  socket.send_pyobj(msg)
+  return socket.recv_pyobj()
+
+def send_msg(port, msg):
+  context = zmq.Context()
+  socket = context.socket(zmq.REQ)
+  socket.connect('tcp://%s:%s' % ('127.0.0.1', port))
+  socket.send_pyobj(msg)
 
 def teardownrepos():
   if os.path.isdir('testarea'):

@@ -2,9 +2,11 @@
 
 import os.path
 import sys
+import time
 
 from slingrpm import SlingerFileServer 
 
 server = SlingerFileServer(sys.argv[1])
 print server.port
+time.sleep(120)
 server.stop()

@@ -7,21 +7,56 @@ import os
 import os.path
 import zmq
 
+import testutils
 from slingrpm import SlingerFileServer 
+from slingrpm import SlingerFileServerProcess 
+from slingrpm import FileHandler 
 
-def send_msg_get_rsp(port, msg):
-  context = zmq.Context()
-  socket = context.socket(zmq.REQ)
-  socket.connect('tcp://%s:%s' % ('127.0.0.1', port))
-  socket.send_pyobj(msg)
-  return socket.recv_pyobj()
+describe "the FileHandler class":
+  before all:
+    testutils.setuprepos()
 
-def send_msg(port, msg):
-  context = zmq.Context()
-  socket = context.socket(zmq.REQ)
-  socket.connect('tcp://%s:%s' % ('127.0.0.1', port))
-  socket.send_pyobj(msg)
+  before each:
+    pass
 
+  it "initializes with a filename":
+    fh = FileHandler(os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf'))
+    assert fh
+
+  it "initializes with a filename and buffersize":
+    fh = FileHandler(os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf'), 1024)
+    assert fh.buffer == 1024
+
+  it "can be called in a context block":
+    with FileHandler(os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')) as fh:
+      assert fh
+
+  it "has a method for reading out bytes":
+    fh = FileHandler(os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf'), 8)
+    assert fh.read(0)
+
+  it "reads the right bytes":
+    fh = FileHandler(os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf'), 8)
+    fhdata = fh.read(8)
+    with open(os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf'), 'rb') as fd:
+      fd.seek(8)
+      fddata = fd.read(8)
+      assert fddata == fhdata
+
+  it "has a method for returning current location in the file being handled":
+    fh = FileHandler(os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf'), 8)
+    assert fh.tell() == 0
+
+  it "remembers its place in a file":
+    fh = FileHandler(os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf'), 2)
+    fh.read(0)
+    assert fh.tell() == 2
+
+  after each:
+    pass
+
+  after all:
+    testutils.teardownrepos()
 
 describe "receiving a package with SlingerFileServer":
  
@@ -43,32 +78,32 @@ describe "receiving a package with SlingerFileServer":
     server = SlingerFileServer('testarea/repo') 
     assert server.port != 0 
     msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
-    data = send_msg_get_rsp(server.port, msg) 
+    data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "FILE INCOMING"
     msg = {'loc': 'DONE', 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
-    send_msg(server.port, msg) 
+    testutils.send_msg(server.port, msg) 
     server.stop()
 
   it "accepts a message asking for a file as path , and responds with FILE INCOMING if file exists":
     server = SlingerFileServer('testarea/repo')
     msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
-    data = send_msg_get_rsp(server.port, msg) 
+    data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "FILE INCOMING"
     msg = {'loc': 'DONE', 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
-    send_msg(server.port, msg) 
+    testutils.send_msg(server.port, msg) 
     server.stop()
 
   it "accepts a message asking for a file as path , and responds with NO FILE if file does not exist":
     server = SlingerFileServer('testarea/repo')
     msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/norepo/.slingrpm.conf')}
-    data = send_msg_get_rsp(server.port, msg) 
+    data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "NO FILE"
     server.stop()
 
   it "accepts a message asking for a file as path , and responds with CANNOT SERVE THAT if file is outside of servedir":
     server = SlingerFileServer('testarea/repo')
     msg = {'loc': 0, 'path': os.path.join('/etc/hosts')}
-    data = send_msg_get_rsp(server.port, msg) 
+    data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "CANNOT SERVE THAT"
     server.stop()
 
