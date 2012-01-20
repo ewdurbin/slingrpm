@@ -36,7 +36,7 @@ class SlingerFileServerProcess(Process):
     self.servedir = servedir
 
     self.daemon = True
-    self.port = None 
+    self.port = 0
 
     self.child_conn, self.parent_conn = Pipe(duplex = False)
     SlingerFileServerProcess.all_open_parent_conns.append(self.parent_conn)
@@ -79,6 +79,8 @@ class SlingerFileServerProcess(Process):
       while True:
         msg = self.socket.recv_pyobj()
         if msg['loc'] == 'DONE':
+          ret['body'] = 'OKAYBYE'
+          self.socket.send_pyobj(ret)
           break
         ret['body'] = fh.read(msg['loc'])
         ret['crc'] = zlib.crc32(ret['body'],ret['crc'])
@@ -86,7 +88,7 @@ class SlingerFileServerProcess(Process):
   
         self.socket.send_pyobj(ret)
 
-    self.socket.close()
+    self.socket.close(linger=10)
 
   def get_port(self):
     self.parent_conn.close()
@@ -103,5 +105,5 @@ class SlingerFileServer:
     self.port = self.proc.get_port()
 
   def stop(self):
-    self.proc.join()
+    self.proc.join(timeout=.1)
 
