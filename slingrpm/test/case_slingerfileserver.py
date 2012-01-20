@@ -68,6 +68,7 @@ describe "receiving a package with SlingerFileServer":
  
   it "accepts a directory path to serve from":
     server = SlingerFileServer('testarea/repo')
+    server.start()
     assert server
     server.stop()
 
@@ -76,6 +77,7 @@ describe "receiving a package with SlingerFileServer":
 
   it "has a serve method which returns a nonzero port for valid directory":
     server = SlingerFileServer('testarea/repo') 
+    server.start()
     assert server.port != 0 
     msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
     data = testutils.send_msg_get_rsp(server.port, msg) 
@@ -86,6 +88,7 @@ describe "receiving a package with SlingerFileServer":
 
   it "accepts a message asking for a file as path , and responds with FILE INCOMING if file exists":
     server = SlingerFileServer('testarea/repo')
+    server.start()
     msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
     data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "FILE INCOMING"
@@ -95,6 +98,7 @@ describe "receiving a package with SlingerFileServer":
 
   it "accepts a message asking for a file as path , and responds with NO FILE if file does not exist":
     server = SlingerFileServer('testarea/repo')
+    server.start()
     msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/norepo/.slingrpm.conf')}
     data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "NO FILE"
@@ -102,6 +106,7 @@ describe "receiving a package with SlingerFileServer":
 
   it "accepts a message asking for a file as path , and responds with CANNOT SERVE THAT if file is outside of servedir":
     server = SlingerFileServer('testarea/repo')
+    server.start()
     msg = {'loc': 0, 'path': os.path.join('/etc/hosts')}
     data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "CANNOT SERVE THAT"

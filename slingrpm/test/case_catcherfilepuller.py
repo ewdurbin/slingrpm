@@ -5,6 +5,7 @@ from slingrpm import SlingerFileServer
 import testutils
 import os
 import os.path
+import time
 
 describe "receiving a package with CatcherFilePuller":
  
@@ -13,7 +14,8 @@ describe "receiving a package with CatcherFilePuller":
 
   before each:
     testutils.setuprepos()
-    self.slinger = SlingerFileServer(os.path.join(os.getcwd(), 'testarea/repo'), 1024)
+    self.slinger = SlingerFileServer(os.path.join(os.getcwd(), 'testarea/repo'), 32)
+    self.slinger.start()
     self.filetoget = os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')
     self.nonfiletoget = os.path.join(os.getcwd(), 'testarea/repo/no.file')
     self.dst = os.path.join(os.getcwd(), 'testarea/recvd.file')
@@ -27,7 +29,9 @@ describe "receiving a package with CatcherFilePuller":
 
   it "gets a file when get_file is called":
     catcher = CatcherFilePuller(self.dst, self.filetoget, '127.0.0.1', self.slinger.port)
-    catcher.get_file()
+    catcher.start()
+    while catcher.status_queue.empty():
+      time.sleep(.001)
     assert os.path.isfile(self.dst)
 
   it "raises Exception if get_file is called for non existant file": 

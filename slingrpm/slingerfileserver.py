@@ -1,8 +1,8 @@
 import zmq
 from multiprocessing import Process
-from multiprocessing import Pipe
 from multiprocessing import Queue 
 import sys
+import time
 import os.path
 import zlib
 
@@ -27,24 +27,17 @@ class FileHandler:
   def tell(self):
     return self.fd.tell()
 
-class SlingerFileServerProcess(Process): # pragma: no cover
+class SlingerFileServerProcess(Process):
 
-  all_open_parent_conns = []
-
-  def __init__(self, servedir, buffer=32768):
+  def __init__(self, servedir, port_queue, done_queue, buffer=32768):
     super(SlingerFileServerProcess, self).__init__()
     self.servedir = servedir
     self.buffer = buffer
 
     self.daemon = True
     self.port = 0
-
-    self.child_conn, self.parent_conn = Pipe(duplex = False)
-    SlingerFileServerProcess.all_open_parent_conns.append(self.parent_conn)
-    self.port_queue = Queue(1)
-
-    self.start()
-    self.child_conn.close()
+    self.port_queue = port_queue 
+    self.done_queue = done_queue 
 
   def setup_connection(self):
     self.context = zmq.Context(1)  
@@ -53,7 +46,7 @@ class SlingerFileServerProcess(Process): # pragma: no cover
       port = self.socket.bind_to_random_port('tcp://*', 64000, 65000, 100)
     except:
       raise
-    return port
+    self.port_queue.put(port)
 
   def check_path(self):
     file = self.socket.recv_pyobj()
@@ -86,26 +79,15 @@ class SlingerFileServerProcess(Process): # pragma: no cover
   
       self.socket.send_pyobj(ret)
 
+    self.done_queue.put(True)
     self.socket.close(linger=10)
 
   def run(self):
-    for conn in SlingerFileServerProcess.all_open_parent_conns:
-      conn.close()
-
-    self.port = self.setup_connection()
-    self.port_queue.put(self.port)
-    self.port_queue.close()
-    self.child_conn.close()
-
+    self.setup_connection()
     if not self.check_path(): 
       return
-  
     with FileHandler(self.servefile, self.buffer) as fh:
       self.serve_loop(fh)
-
-  def get_port(self):
-    self.parent_conn.close()
-    return self.port_queue.get()
 
 class SlingerFileServer:
 
@@ -114,9 +96,18 @@ class SlingerFileServer:
       self.servedir = os.path.abspath(servedir)
     else:
       raise Exception 
-    self.proc = SlingerFileServerProcess(self.servedir) 
-    self.port = self.proc.get_port()
+    self.port = 0
+    self.port_queue = Queue(1)
+    self.done_queue = Queue(1)
+    self.proc = SlingerFileServerProcess(self.servedir, self.port_queue, self.done_queue, buffer) 
+
+  def start(self):
+    self.proc.start()
+    while self.port_queue.empty():
+      time.sleep(.01)
+    self.port = self.port_queue.get()
 
   def stop(self):
-    self.proc.join(timeout=.1)
-
+    if self.proc.is_alive():
+      self.proc.terminate()
+      self.proc.join()
