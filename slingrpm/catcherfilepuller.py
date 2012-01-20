@@ -81,3 +81,8 @@ class CatcherFilePuller:
 
   def start(self):
     self.proc.start()
+
+  def stop(self):
+    if self.proc.is_alive():
+      self.proc.terminate()
+      self.proc.join()
