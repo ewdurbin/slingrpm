@@ -1,6 +1,7 @@
 import konira
 import os
 import os.path
+import shutil
 
 import testutils
 from slingrpm import SlingSetup
@@ -11,10 +12,10 @@ from slingrpm import AlreadySlingEnabledException
 describe "setting up a sling enabled repository with SlingSetup":
 
   before all:
-    pass
+    testutils.setuprepos() 
 
   before each:
-    testutils.setuprepos() 
+    pass
  
   it "raises NoRepoException if target repo is not a directory which exists":
     raises NoRepoException: repo = SlingSetup('testarea/norepo')
@@ -44,9 +45,13 @@ describe "setting up a sling enabled repository with SlingSetup":
     assert config
 
   after each:
-    testutils.teardownrepos()
+    if os.path.isdir('testarea/freshrepo/repodata'):
+      shutil.rmtree('testarea/freshrepo/repodata')
+    if os.path.isfile('testarea/freshrepo/.slingrpm.conf'):
+      os.remove('testarea/freshrepo/.slingrpm.conf')
+    pass
 
   after all:
-    pass
+    testutils.teardownrepos()
 
 

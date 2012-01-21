@@ -11,3 +11,5 @@ class Catcher:
     self.targetrepo = targetrepo
     self.config = slingrpm.SlingConfig()
     self.config.read(self.targetrepo + '.slingrpm.conf')
+
+

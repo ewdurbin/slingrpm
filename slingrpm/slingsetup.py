@@ -4,15 +4,10 @@ import subprocess
 import ConfigParser
 
 from slingconfig import SlingConfig
+from yumrepo import YumRepo
 
 from exceptions import NoRepoException
 from exceptions import AlreadySlingEnabledException 
-
-def execute(cmd):
-  fd = open('execute.log', 'a')
-  retcode = subprocess.check_call([cmd], stderr=fd, stdout=fd, shell=True)
-  fd.close()
-  return retcode
 
 class SlingSetup:
 
@@ -25,7 +20,8 @@ class SlingSetup:
       self.config.new(os.path.join(fullrepopath, '.slingrpm.conf'))
     else:
       raise AlreadySlingEnabledException('repo at : ' + fullrepopath + ' already sling enabled!')
+    repo = YumRepo(self.config.repolocation)
     if not os.path.isdir(os.path.join(fullrepopath, 'repodata')):
-      execute('createrepo ' + fullrepopath + " " +self.config.createrepoopts)
+      repo.updatemetadata()
 
     self.config = SlingConfig(os.path.join(fullrepopath, '.slingrpm.conf'))

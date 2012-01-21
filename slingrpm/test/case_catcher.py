@@ -38,7 +38,7 @@ describe "receiving a package with Catcher":
     assert catcher.config.createrepoopts == "--update --excludes .slingrpm.conf --checksum sha" 
 
   after each:
-    pass
+   pass
     
   after all:
     testutils.teardownrepos()

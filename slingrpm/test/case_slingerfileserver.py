@@ -79,27 +79,22 @@ describe "receiving a package with SlingerFileServer":
     server = SlingerFileServer('testarea/repo') 
     server.start()
     assert server.port != 0 
-    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
-    data = testutils.send_msg_get_rsp(server.port, msg) 
-    assert data['body'] == "FILE INCOMING"
-    msg = {'loc': 'DONE', 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
-    testutils.send_msg(server.port, msg) 
     server.stop()
 
   it "accepts a message asking for a file as path , and responds with FILE INCOMING if file exists":
     server = SlingerFileServer('testarea/repo')
     server.start()
-    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
+    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/empty-0-0.i386.rpm')}
     data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "FILE INCOMING"
-    msg = {'loc': 'DONE', 'path': os.path.join(os.getcwd(), 'testarea/repo/.slingrpm.conf')}
+    msg = {'loc': 'DONE', 'path': os.path.join(os.getcwd(), 'testarea/repo/empty-0-0.i386.rpm')}
     testutils.send_msg(server.port, msg) 
     server.stop()
 
   it "accepts a message asking for a file as path , and responds with NO FILE if file does not exist":
     server = SlingerFileServer('testarea/repo')
     server.start()
-    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/norepo/.slingrpm.conf')}
+    msg = {'loc': 0, 'path': os.path.join(os.getcwd(), 'testarea/repo/empty-0-2.i386.rpm')}
     data = testutils.send_msg_get_rsp(server.port, msg) 
     assert data['body'] == "NO FILE"
     server.stop()

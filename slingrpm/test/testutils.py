@@ -1,11 +1,18 @@
 import sys
 import os.path
+import subprocess
 import shutil
 import multiprocessing
 import zmq
 import SimpleHTTPServer
 import SocketServer
 import ConfigParser
+
+def execute(cmd):
+  fd = open('execute.log', 'a')
+  retcode = subprocess.check_call([cmd], stderr=fd, stdout=fd, shell=True)
+  fd.close()
+  return retcode
 
 def touch(filename, content="foo"):
   f = open(filename, 'w')
@@ -14,16 +21,17 @@ def touch(filename, content="foo"):
 
 def setuprepos():
   os.makedirs('testarea/badrepo')
-  os.makedirs('testarea/repo/repodata')
+  os.makedirs('testarea/repo')
   os.makedirs('testarea/realrepo')
   os.makedirs('testarea/freshrepo')
   os.makedirs('testarea/badconfrepo')
 
-  touch('testarea/repo/repodata/repomd.xml')
-  touch('testarea/badconfrepo/.slingrpm.conf')
-
   shutil.copyfile('slingrpm/test/empty-0-0.i386.rpm', 'testarea/repo/empty-0-0.i386.rpm')
   shutil.copyfile('slingrpm/test/empty-0-0.i386.rpm', 'testarea/realrepo/empty-0-0.i386.rpm')
+
+  execute('createrepo %s' % 'testarea/repo')
+  execute('createrepo %s' % 'testarea/realrepo')
+  touch('testarea/badconfrepo/.slingrpm.conf')
 
   config = ConfigParser.RawConfigParser()
   config.add_section('SlingRPM')

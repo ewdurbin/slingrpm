@@ -36,7 +36,7 @@ class SlingConfig:
 
   def new(self, configlocation):
     if os.path.isfile(configlocation):
-      raise Exception # pragma: no cover
+      raise Exception
     config = ConfigParser.RawConfigParser()
     config.add_section('SlingRPM')
     config.set('SlingRPM', 'repolocation', os.path.dirname(configlocation))
