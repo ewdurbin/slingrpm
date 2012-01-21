@@ -21,8 +21,10 @@ def touch(filename, content="foo"):
 
 def mocketc():
   os.makedirs('testarea/etc/slingrpm')
+  touch('testarea/etc/slingrpm/bad.conf')
   config = ConfigParser.RawConfigParser()
   config.add_section('SlingRPMDaemon')
+  config.set('SlingRPMDaemon', 'listenport', 64666) 
   with open('testarea/etc/slingrpm/daemon.conf', 'wb') as configfile:
     config.write(configfile)
 
