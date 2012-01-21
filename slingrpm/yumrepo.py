@@ -5,7 +5,6 @@ from slingrpm import SlingConfig
 
 def execute(cmd):
   fd = open('execute.log', 'a')
-  fd.write('slingrpm/yumrepo')
   retcode = subprocess.check_call([cmd], stderr=fd, stdout=fd, shell=True)
   fd.close()
   return retcode
