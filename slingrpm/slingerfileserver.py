@@ -80,7 +80,7 @@ class SlingerFileServerProcess(Process):
       self.socket.send_pyobj(ret)
 
     self.done_queue.put(True)
-    self.socket.close(linger=10)
+    self.socket.close()
 
   def run(self):
     self.setup_connection()

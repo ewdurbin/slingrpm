@@ -7,6 +7,8 @@ import time
 from slingrpm import SlingerFileServer 
 
 server = SlingerFileServer(sys.argv[1])
+server.start()
 print server.port
-time.sleep(120)
+while server.proc.is_alive():
+  time.sleep(1)
 server.stop()

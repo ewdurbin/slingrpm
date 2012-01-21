@@ -2,8 +2,11 @@
 
 import os.path
 import sys
+import time
 
 from slingrpm import CatcherFilePuller 
 
 puller = CatcherFilePuller(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-puller.get_file()
+puller.start()
+while puller.proc.is_alive():
+  time.sleep(1)
