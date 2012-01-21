@@ -17,7 +17,7 @@ describe "receiving a package with CatcherFilePuller":
     self.slinger.start()
     self.filetoget = os.path.join(os.getcwd(), 'slingrpm/test/empty-0-1.i386.rpm')
     self.nonfiletoget = os.path.join(os.getcwd(), 'slingrpm/test/empty-0-2.i386.rpm')
-    self.dst = os.path.join(os.getcwd(), 'testarea/repo/empty-0-1.i386.rpm')
+    self.dst = os.path.join(os.getcwd(), 'testarea/repos/repo/empty-0-1.i386.rpm')
  
   it "initializes with a destpath, srcpath, host and port":
     catcher = CatcherFilePuller(self.dst, self.filetoget, '127.0.0.1', self.slinger.port)

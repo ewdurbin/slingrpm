@@ -7,5 +7,6 @@ from slingerfileserver import SlingerFileServerProcess
 from slingerfileserver import FileHandler
 from catcherfilepuller import CatcherFilePuller
 from yumrepo import YumRepo
+from slingrpmdaemon import SlingRPMDaemon
 from exceptions import NoRepoException
 from exceptions import AlreadySlingEnabledException 

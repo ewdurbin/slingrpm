@@ -12,9 +12,9 @@ describe "pushing rpms with Slinger":
     self.server = testutils.TempServer()
     self.httpport = str(self.server.port)
     self.server.start()
-    self.goodhttprepo = "http://localhost:" + self.httpport + "/testarea/repo/"
-    self.vanillarepo = "http://localhost:" + self.httpport + "/testarea/realrepo/"
-    self.badhttprepo = "http://localhost:" + self.httpport + "/testarea/badrepo/"
+    self.goodhttprepo = "http://localhost:" + self.httpport + "/testarea/repos/repo/"
+    self.vanillarepo = "http://localhost:" + self.httpport + "/testarea/repos/realrepo/"
+    self.badhttprepo = "http://localhost:" + self.httpport + "/testarea/repos/badrepo/"
 
     self.filetoserve = os.path.join(os.getcwd(), 'slingrpm/test/empty-0-1.i386.rpm')
 

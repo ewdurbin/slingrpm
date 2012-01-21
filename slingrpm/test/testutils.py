@@ -19,28 +19,44 @@ def touch(filename, content="foo"):
   f.write(content)
   f.close()
 
+def mocketc():
+  os.makedirs('testarea/etc/slingrpm')
+  config = ConfigParser.RawConfigParser()
+  config.add_section('SlingRPMDaemon')
+  with open('testarea/etc/slingrpm/daemon.conf', 'wb') as configfile:
+    config.write(configfile)
+
+def unmocketc():
+  if os.path.isdir('testarea/etc'):
+    shutil.rmtree('testarea/etc')
+    
+
 def setuprepos():
-  os.makedirs('testarea/badrepo')
-  os.makedirs('testarea/repo')
-  os.makedirs('testarea/realrepo')
-  os.makedirs('testarea/freshrepo')
-  os.makedirs('testarea/badconfrepo')
+  os.makedirs('testarea/repos/badrepo')
+  os.makedirs('testarea/repos/repo')
+  os.makedirs('testarea/repos/realrepo')
+  os.makedirs('testarea/repos/freshrepo')
+  os.makedirs('testarea/repos/badconfrepo')
 
-  shutil.copyfile('slingrpm/test/empty-0-0.i386.rpm', 'testarea/repo/empty-0-0.i386.rpm')
-  shutil.copyfile('slingrpm/test/empty-0-0.i386.rpm', 'testarea/realrepo/empty-0-0.i386.rpm')
+  shutil.copyfile('slingrpm/test/empty-0-0.i386.rpm', 'testarea/repos/repo/empty-0-0.i386.rpm')
+  shutil.copyfile('slingrpm/test/empty-0-0.i386.rpm', 'testarea/repos/realrepo/empty-0-0.i386.rpm')
 
-  execute('createrepo %s' % 'testarea/repo')
-  execute('createrepo %s' % 'testarea/realrepo')
-  touch('testarea/badconfrepo/.slingrpm.conf')
+  execute('createrepo %s' % 'testarea/repos/repo')
+  execute('createrepo %s' % 'testarea/repos/realrepo')
+  touch('testarea/repos/badconfrepo/.slingrpm.conf')
 
   config = ConfigParser.RawConfigParser()
   config.add_section('SlingRPM')
-  config.set('SlingRPM', 'repolocation', os.path.abspath('testarea/repo')) 
+  config.set('SlingRPM', 'repolocation', os.path.abspath('testarea/repos/repo')) 
   config.set('SlingRPM', 'packagedir', '')
   config.set('SlingRPM', 'commport', 64666) 
   config.set('SlingRPM', 'createrepoopts', '--update --excludes .slingrpm.conf --checksum sha') 
-  with open('testarea/repo/.slingrpm.conf', 'wb') as configfile:
+  with open('testarea/repos/repo/.slingrpm.conf', 'wb') as configfile:
     config.write(configfile)
+
+def teardownrepos():
+  if os.path.isdir('testarea/repos'):
+    shutil.rmtree('testarea/repos')
 
 def send_msg_get_rsp(port, msg):
   context = zmq.Context()
@@ -54,10 +70,6 @@ def send_msg(port, msg):
   socket = context.socket(zmq.REQ)
   socket.connect('tcp://%s:%s' % ('127.0.0.1', port))
   socket.send_pyobj(msg)
-
-def teardownrepos():
-  if os.path.isdir('testarea'):
-    shutil.rmtree('testarea')
 
 class TempHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
   def log_message(self, format, *args):

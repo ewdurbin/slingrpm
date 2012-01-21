@@ -7,10 +7,10 @@ import testutils
 from slingrpm import SlingConfig
 from slingrpm import YumRepo
 
-goodrepo = os.path.join(os.getcwd(),'testarea/repo/')
-realrepo = os.path.join(os.getcwd(),'testarea/realrepo/')
-freshrepo = os.path.join(os.getcwd(),'testarea/freshrepo/')
-norepo = os.path.join(os.getcwd(),'testarea/norepo/')
+goodrepo = os.path.join(os.getcwd(),'testarea/repos/repo/')
+realrepo = os.path.join(os.getcwd(),'testarea/repos/realrepo/')
+freshrepo = os.path.join(os.getcwd(),'testarea/repos/freshrepo/')
+norepo = os.path.join(os.getcwd(),'testarea/repos/norepo/')
 
 
 describe "slingrpms representation of a yum repository":

@@ -11,8 +11,8 @@ describe "receiving a package with Catcher":
   before all:
     testutils.setuprepos()
 
-    self.badrepopath = os.path.join(os.getcwd(),'testarea/badrepo/')
-    self.repopath = os.path.join(os.getcwd(),'testarea/repo/')
+    self.badrepopath = os.path.join(os.getcwd(),'testarea/repos/badrepo/')
+    self.repopath = os.path.join(os.getcwd(),'testarea/repos/repo/')
 
   before each:
     self.slinger = SlingerFileServer(os.path.join(os.getcwd(), 'slingrpm/test'))
