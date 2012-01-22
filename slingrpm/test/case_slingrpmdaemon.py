@@ -29,5 +29,13 @@ describe "the SlingRPMDaemon":
     daemon = SlingRPMDaemon(goodconf)
     assert int(daemon.listenport) == 64666
 
+  it "opens a daemon port when start is called":
+    daemon = SlingRPMDaemon(goodconf)
+    daemon.start()
+    msg = {'body': "ALIVE?"}
+    resp = testutils.send_msg_get_rsp(daemon.listenport, msg)
+    assert resp['body'] == "YES"
+    daemon.stop()
+
   after all:
     testutils.unmocketc()
