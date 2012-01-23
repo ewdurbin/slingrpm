@@ -12,7 +12,7 @@ class Catcher:
     self.targetrepo = targetrepo
     self.slinghost = slinghost
     self.slingport = slingport
-    self.config = slingrpm.SlingConfig(self.targetrepo + '.slingrpm.conf')
+    self.config = slingrpm.SlingConfig(os.path.join(self.targetrepo, '.slingrpm.conf'))
     self.packagedir = self.config.packagedir
     self.package = os.path.basename(file)
     self.dest = os.path.join(self.packagedir, self.package)

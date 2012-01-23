@@ -29,7 +29,7 @@ class FileHandler:
 
 class SlingerFileServerProcess(Process):
 
-  def __init__(self, servedir, port_queue, done_queue, buffer=32768):
+  def __init__(self, servedir, port_queue=Queue(1), done_queue=Queue(1), buffer=32768):
     super(SlingerFileServerProcess, self).__init__()
     self.servedir = servedir
     self.buffer = buffer

@@ -7,7 +7,7 @@ import time
 
 class CatcherFilePullerProcess(Process):
 
-  def __init__(self, destpath, srcpath, host, port, status_queue):
+  def __init__(self, destpath, srcpath, host, port, status_queue=Queue(1)):
     super(CatcherFilePullerProcess, self).__init__()
     self.destpath = destpath
     self.srcpath = srcpath
