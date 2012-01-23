@@ -33,7 +33,6 @@ class SlingRPMDaemon:
 
   def __init__(self, conf='/etc/slingrpm/daemon.conf'):
     self.read(conf)
-    self.proc = SlingRPMDaemonProcess(self.config)
 
   def read(self, conf):
     if not os.path.isfile(conf):
@@ -50,9 +49,16 @@ class SlingRPMDaemon:
       raise
 
   def start(self):
+    self.proc = SlingRPMDaemonProcess(self.config)
     self.proc.start()
 
   def stop(self):
     if self.proc.is_alive():
       self.proc.terminate()
       self.proc.join(.01)
+
+if __name__ == "__main__":
+  import slingrpm
+  daemon = SlingRPMDaemon()
+  slingrpm.daemonize()
+  daemon.start()
