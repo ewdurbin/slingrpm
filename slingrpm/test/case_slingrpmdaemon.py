@@ -8,6 +8,9 @@ import time
 from slingrpm import SlingRPMDaemon
 from slingrpm import Slinger
 
+import time
+
+
 goodconf = os.path.join(os.getcwd(), 'testarea/etc/slingrpm/daemon.conf')
 badconf = os.path.join(os.getcwd(), 'testarea/etc/slingrpm/bad.conf')
 noconf = os.path.join(os.getcwd(), 'testarea/etc/slingrpm/no.conf')
@@ -64,9 +67,12 @@ describe "process tests for SlingRPMDaemon":
     port = self.d.listenport
     resp = testutils.send_msg_get_rsp(port, msg)
     server.stop()
+    while self.d.pull_queue.empty():
+      time.sleep(.001)
     assert os.path.isfile(os.path.join(os.getcwd(), 'testarea/repos/repo', 'empty-0-1.i386.rpm'))
     testutils.teardownrepos()
 
   after all:
     self.d.stop()
     testutils.unmocketc()
+    testutils.teardownrepos()

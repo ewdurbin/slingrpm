@@ -24,3 +24,7 @@ class Slinger:
 
   def serve(self):
     self.fileserver.start()
+
+  def stop(self):
+    self.fileserver.proc.terminate()
+    self.fileserver.proc.join()

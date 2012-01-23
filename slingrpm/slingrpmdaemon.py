@@ -5,19 +5,25 @@ from multiprocessing import Process
 from multiprocessing import Queue
 
 from slingconfig import SlingConfig
-from slingrpm import Catcher
+from catcherfilepuller import CatcherFilePullerProcess
+
+#import multiprocessing
+#import logging
+#multiprocessing.log_to_stderr(logging.DEBUG)
 
 class SlingRPMDaemonProcess(Process):
 
-  def __init__(self, config):
+  def __init__(self, config, pull_queue):
     super(SlingRPMDaemonProcess, self).__init__()
     self.config = config
     self.listenport = self.config.get('SlingRPMDaemon', 'listenport')
-    self.pullers = []
-    self.updaters = []
+    self.pull_queue = pull_queue
 
   def runloop(self):
+    poller = zmq.core.poll.Poller()
+    poller.register(self.socket, flags=zmq.POLLIN)
     while True:
+      poller.poll()
       msg = self.socket.recv_pyobj()
       ret = {}
 
@@ -34,9 +40,9 @@ class SlingRPMDaemonProcess(Process):
           file = msg['file']
           config = SlingConfig(os.path.join(repo, '.slingrpm.conf'))
           destpath = os.path.join(config.packagedir, os.path.basename(file))
-          catcher = Catcher(targetrepo=repo, slinghost=host, slingport=port, file=file)
+          catcher = CatcherFilePullerProcess(destpath, file, host, port, self.pull_queue)
           ret['body'] = "PULLING FILE"
-          catcher.pull()
+          catcher.start()
         except:
           import traceback
           ret['body'] = "ERROR"
@@ -61,6 +67,7 @@ class SlingRPMDaemon:
 
   def __init__(self, conf='/etc/slingrpm/daemon.conf'):
     self.read(conf)
+    self.pull_queue = Queue()
 
   def read(self, conf):
     if not os.path.isfile(conf):
@@ -77,15 +84,15 @@ class SlingRPMDaemon:
       raise
 
   def start(self):
-    self.proc = SlingRPMDaemonProcess(self.config)
+    self.proc = SlingRPMDaemonProcess(self.config, self.pull_queue)
     self.proc.start()
 
   def stop(self):
     if self.proc.is_alive():
       self.proc.terminate()
-      self.proc.join(.01)
+      self.proc.join(timeout=10)
 
-if __name__ == "__main__":
-  import slingrpm
-  daemon = SlingRPMDaemonProcess(SlingRPMDaemon().config)
-  daemon.run()
+#if __name__ == "__main__":
+#  import slingrpm
+#  daemon = SlingRPMDaemonProcess(SlingRPMDaemon().config)
+#  daemon.run()
