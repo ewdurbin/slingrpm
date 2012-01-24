@@ -44,10 +44,33 @@ describe "process tests for SlingRPMDaemon":
     self.d = SlingRPMDaemon(goodconf)
     self.d.start()
 
-  it "opens a daemon port when start is called":
+  it "responds with YES when asked if ALIVE":
     msg = {'body': "ALIVE?"}
     resp = testutils.send_msg_get_rsp(self.d.listenport, msg)
     assert resp['body'] == "YES"
+
+  it "responds with ERROR when bad repo is approached":
+    testutils.setuprepos()
+    server = testutils.TempServer()
+    server.start()
+    
+    slinger = Slinger('http://localhost:' + str(server.port) + '/testarea/repos/repo/', os.path.join(os.getcwd(), 'slingrpm/test', 'empty-0-1.i386.rpm'))
+    slinger.serve()
+    port = slinger.fileserver.port
+
+    msg = {'body': "FILE TO UPLOAD",
+           'host': 'localhost',
+           'port': port, 
+           'path': os.path.join(os.getcwd(), 'slingrpm/test', 'empty-0-1.i386.rpm'),
+           'repo': os.path.join(os.getcwd(), 'testarea/repos/norepo')}
+
+    port = self.d.listenport
+    resp = testutils.send_msg_get_rsp(port, msg)
+    server.stop()
+    while self.d.pull_queue.empty():
+      time.sleep(.001)
+    assert resp['body'] == "ERROR"
+    testutils.teardownrepos()
 
   it "can obtain a file":
     testutils.setuprepos()
@@ -61,7 +84,7 @@ describe "process tests for SlingRPMDaemon":
     msg = {'body': "FILE TO UPLOAD",
            'host': 'localhost',
            'port': port, 
-           'file': os.path.join(os.getcwd(), 'slingrpm/test', 'empty-0-1.i386.rpm'),
+           'path': os.path.join(os.getcwd(), 'slingrpm/test', 'empty-0-1.i386.rpm'),
            'repo': os.path.join(os.getcwd(), 'testarea/repos/repo')}
 
     port = self.d.listenport

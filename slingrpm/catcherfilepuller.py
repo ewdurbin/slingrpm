@@ -8,13 +8,14 @@ import time
 class CatcherFilePullerProcess(Process):
 
   def __init__(self, destpath, srcpath, host, port, status_queue=Queue(1)):
+    if os.path.isfile(destpath):
+      raise Exception
     super(CatcherFilePullerProcess, self).__init__()
     self.destpath = destpath
     self.srcpath = srcpath
     self.host = host
     self.port = port
     self.status_queue = status_queue
-    self.daemon = True
     self.msg = {'loc': 0,
                 'path': self.srcpath}
 
@@ -61,10 +62,8 @@ class CatcherFilePullerProcess(Process):
       self.get_file()
       while self.status_queue.empty():
         time.sleep(.001)
-      self.socket.close()
       return
     else:
-      self.socket.close()
       self.status_queue.put('FAILED')
       return
 

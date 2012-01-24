@@ -1,73 +1,121 @@
 import ConfigParser
 import zmq
+
 import os.path
 from multiprocessing import Process
 from multiprocessing import Queue
 
+import time
+import sys
+import threading
+import zlib
 from slingconfig import SlingConfig
-from catcherfilepuller import CatcherFilePullerProcess
 
-#import multiprocessing
-#import logging
-#multiprocessing.log_to_stderr(logging.DEBUG)
+import multiprocessing
+import logging
+multiprocessing.log_to_stderr(logging.DEBUG)
 
 class SlingRPMDaemonProcess(Process):
 
-  def __init__(self, config, pull_queue):
+  def __init__(self, config):
     super(SlingRPMDaemonProcess, self).__init__()
     self.config = config
     self.listenport = self.config.get('SlingRPMDaemon', 'listenport')
-    self.pull_queue = pull_queue
 
-  def runloop(self):
-    poller = zmq.core.poll.Poller()
-    poller.register(self.socket, flags=zmq.POLLIN)
+  def get_socket(self, host, port):
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    server = 'tcp://%s:%s' % (host, port)
+    socket.connect(server)
+    return socket
+
+  def check_file(self, socket, destpath, msg):
+    socket.send_pyobj(msg)
+    data = socket.recv_pyobj()
+    if data['body'] != 'FILE INCOMING':
+      return data['body'], None
+    try:
+      dest = open(destpath, 'w+')  
+    except:
+      return 'CANNOT WRITE FILE', None
+    return data['body'], dest
+
+  def get_file(self, socket, dest, msg):
+    crc = 0 
     while True:
-      poller.poll()
-      msg = self.socket.recv_pyobj()
+      socket.send_pyobj(msg)
+      data = socket.recv_pyobj()
+      if data['body']:
+        crcnew = zlib.crc32(data['body'], crc)
+        if crcnew == data['crc']:
+          crc = crcnew
+          dest.write(data['body'])
+          msg['loc'] = dest.tell()
+        else:
+          continue
+      else:
+        dest.close()
+        msg['loc'] = 'DONE'
+        socket.send_pyobj(msg)
+        break   
+
+  def worker_routine(self, worker_url, context):
+    socket = context.socket(zmq.REP)
+    socket.connect(worker_url)
+    while True:
+      msg = socket.recv_pyobj()
       ret = {}
 
       if msg['body'] == "ALIVE?":
         ret['body'] = "YES"
-        self.socket.send_pyobj(ret)
-        continue
 
       if msg['body'] == "FILE TO UPLOAD":
         try:
           host = msg['host']
           port = msg['port']
           repo = msg['repo']
-          file = msg['file']
+          file = msg['path']
           config = SlingConfig(os.path.join(repo, '.slingrpm.conf'))
           destpath = os.path.join(config.packagedir, os.path.basename(file))
-          catcher = CatcherFilePullerProcess(destpath, file, host, port, self.pull_queue)
-          ret['body'] = "PULLING FILE"
-          catcher.start()
+          subsocket = self.get_socket(host, port)
+          sendmsg = {'loc': 0, 'path': file}
+          resp, fd = self.check_file(subsocket, destpath, sendmsg)
+          print sendmsg
+          if fd:
+            ret['body'] = "PULLING FILE"
+          print sendmsg
+          self.get_file(subsocket, fd, sendmsg)
         except:
           import traceback
           ret['body'] = "ERROR"
           ret['exception'] = traceback.format_exc()
-        self.socket.send_pyobj(ret)
-        continue
 
-      ret['body'] = "UNKNOWN"
-      self.socket.send_pyobj(ret)
+      if ret == {}:
+        ret['body'] = "UNKNOWN"
 
+      socket.send_pyobj(ret)
 
   def run(self):
-    self.context = zmq.Context(2)
-    self.socket = self.context.socket(zmq.REP)
+    self.context = zmq.Context(1)
+    self.clients = self.context.socket(zmq.ROUTER)
+    self.workers = self.context.socket(zmq.DEALER)
+
     try:
-      self.socket.bind('tcp://*:%s' % self.listenport)
+      self.clients.bind('tcp://*:%s' % self.listenport)
+      self.workers.bind('inproc://workers')
     except:
       raise
-    self.runloop()
+
+    for i in range(4):
+      thread = threading.Thread(target=self.worker_routine, args=('inproc://workers', self.context, ))
+      thread.start()
+
+    zmq.device(zmq.QUEUE, self.clients, self.workers)
 
 class SlingRPMDaemon:
 
   def __init__(self, conf='/etc/slingrpm/daemon.conf'):
     self.read(conf)
-    self.pull_queue = Queue()
 
   def read(self, conf):
     if not os.path.isfile(conf):
@@ -84,7 +132,7 @@ class SlingRPMDaemon:
       raise
 
   def start(self):
-    self.proc = SlingRPMDaemonProcess(self.config, self.pull_queue)
+    self.proc = SlingRPMDaemonProcess(self.config)
     self.proc.start()
 
   def stop(self):
@@ -92,7 +140,13 @@ class SlingRPMDaemon:
       self.proc.terminate()
       self.proc.join(timeout=10)
 
-#if __name__ == "__main__":
-#  import slingrpm
-#  daemon = SlingRPMDaemonProcess(SlingRPMDaemon().config)
-#  daemon.run()
+if __name__ == "__main__":
+  import slingrpm
+  daemon = SlingRPMDaemon()
+  try:
+    arg = sys.argv[1]
+  except:
+    arg = None
+  if arg == "-d":
+    slingrpm.daemonize()
+  daemon.start()

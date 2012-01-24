@@ -52,17 +52,16 @@ class SlingerFileServerProcess(Process):
     file = self.socket.recv_pyobj()
     if not os.path.isfile(file['path']):
       self.socket.send_pyobj({'body': 'NO FILE'})
-      self.socket.close()
       return False
     if not os.path.dirname(file['path']).startswith(self.servedir):
       self.socket.send_pyobj({'body': 'CANNOT SERVE THAT'})
-      self.socket.close()
       return False
     self.servefile = file['path']
     self.socket.send_pyobj({'body': 'FILE INCOMING'})
     return True
 
   def serve_loop(self, fh):
+    print "entering serve loop"
     ret = {'body': None,
            'loc': None,
            'crc': 0}
@@ -70,8 +69,6 @@ class SlingerFileServerProcess(Process):
     while True:
       msg = self.socket.recv_pyobj()
       if msg['loc'] == 'DONE':
-        ret['body'] = 'OKAYBYE'
-        self.socket.send_pyobj(ret)
         break
       ret['body'] = fh.read(msg['loc'])
       ret['crc'] = zlib.crc32(ret['body'],ret['crc'])
@@ -79,8 +76,7 @@ class SlingerFileServerProcess(Process):
   
       self.socket.send_pyobj(ret)
 
-    self.done_queue.put(True)
-    self.socket.close()
+    self.done_queue.put("SUCCESS")
 
   def run(self):
     self.setup_connection()
