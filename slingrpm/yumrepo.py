@@ -17,10 +17,10 @@ class YumRepo:
     if not os.path.isfile(os.path.join(repopath, '.slingrpm.conf')):
       raise Exception
     self.repopath = repopath
-    self.slingconfig = SlingConfig(os.path.join(repopath, '.slingrpm.conf'))
+    self.config = SlingConfig(os.path.join(repopath, '.slingrpm.conf'))
 
   def updatemetadata(self):
     try:
-      return execute('createrepo %s %s' % (self.slingconfig.repolocation, self.slingconfig.createrepoopts))
+      return execute('createrepo %s %s' % (self.config.repolocation, self.config.createrepoopts))
     except:
       raise

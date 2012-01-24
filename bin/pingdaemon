@@ -11,6 +11,17 @@ def send_msg_get_rsp(port, msg):
   socket.close()
   return resp 
 
+def send_msg_get_rsp_ipc(path, msg):
+  context = zmq.Context()
+  socket = context.socket(zmq.REQ)
+  socket.connect('ipc://%s' % (path))
+  print 'ipc://%s' % (path)
+  socket.send_pyobj(msg)
+  resp = socket.recv_pyobj()
+  socket.close()
+  return resp 
+
 if __name__ == "__main__":
   msg = {'body': "ALIVE?"}
   print send_msg_get_rsp(64666, msg)
+  print send_msg_get_rsp_ipc('/var/run/slingrpm/catchersout', msg)
