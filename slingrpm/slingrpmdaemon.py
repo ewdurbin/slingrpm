@@ -3,7 +3,6 @@ import zmq
 
 import os.path
 from multiprocessing import Process
-from multiprocessing import Queue
 
 import time
 import sys
@@ -11,9 +10,7 @@ import threading
 import zlib
 from slingconfig import SlingConfig
 
-import multiprocessing
-import logging
-multiprocessing.log_to_stderr(logging.DEBUG)
+from catcher import Catcher
 
 class SlingRPMDaemonProcess(Process):
 
@@ -21,43 +18,6 @@ class SlingRPMDaemonProcess(Process):
     super(SlingRPMDaemonProcess, self).__init__()
     self.config = config
     self.listenport = self.config.get('SlingRPMDaemon', 'listenport')
-
-  def get_socket(self, host, port):
-    context = zmq.Context()
-    socket = context.socket(zmq.REQ)
-    server = 'tcp://%s:%s' % (host, port)
-    socket.connect(server)
-    return socket
-
-  def check_file(self, socket, destpath, msg):
-    socket.send_pyobj(msg)
-    data = socket.recv_pyobj()
-    if data['body'] != 'FILE INCOMING':
-      return data['body'], None
-    try:
-      dest = open(destpath, 'w+')  
-    except:
-      return 'CANNOT WRITE FILE', None
-    return data['body'], dest
-
-  def get_file(self, socket, dest, msg):
-    crc = 0 
-    while True:
-      socket.send_pyobj(msg)
-      data = socket.recv_pyobj()
-      if data['body']:
-        crcnew = zlib.crc32(data['body'], crc)
-        if crcnew == data['crc']:
-          crc = crcnew
-          dest.write(data['body'])
-          msg['loc'] = dest.tell()
-        else:
-          continue
-      else:
-        dest.close()
-        msg['loc'] = 'DONE'
-        socket.send_pyobj(msg)
-        break   
 
   def worker_routine(self, worker_url, context):
     socket = context.socket(zmq.REP)
@@ -76,15 +36,9 @@ class SlingRPMDaemonProcess(Process):
           repo = msg['repo']
           file = msg['path']
           config = SlingConfig(os.path.join(repo, '.slingrpm.conf'))
-          destpath = os.path.join(config.packagedir, os.path.basename(file))
-          subsocket = self.get_socket(host, port)
-          sendmsg = {'loc': 0, 'path': file}
-          resp, fd = self.check_file(subsocket, destpath, sendmsg)
-          print sendmsg
-          if fd:
-            ret['body'] = "PULLING FILE"
-          print sendmsg
-          self.get_file(subsocket, fd, sendmsg)
+          catcher = Catcher(config, host, port, file)
+          ret['body'] = "PULLING FILE"
+          catcher.get_file()
         except:
           import traceback
           ret['body'] = "ERROR"

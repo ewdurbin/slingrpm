@@ -1,27 +1,60 @@
-import os.path
-import time
-
 import slingrpm
+
+import zmq
+import zlib
+import os.path
 
 class Catcher:
 
-  def __init__(self, targetrepo="", slinghost="", slingport=0, file=""):
-    if not os.path.isfile(os.path.join(targetrepo, '.slingrpm.conf')):
-      raise Exception
+  def __init__(self, config, host, port, file):
+    self.config = config
+    self.host = host
+    self.port = port
+    self.file = file
+    self.filename = os.path.basename(file)
+    self.destpath = os.path.join(self.config.packagedir, self.filename)
 
-    self.targetrepo = targetrepo
-    self.slinghost = slinghost
-    self.slingport = slingport
-    self.config = slingrpm.SlingConfig(os.path.join(self.targetrepo, '.slingrpm.conf'))
-    self.packagedir = self.config.packagedir
-    self.package = os.path.basename(file)
-    self.dest = os.path.join(self.packagedir, self.package)
-    self.puller = slingrpm.CatcherFilePuller(self.dest, file, self.slinghost, self.slingport)
+    self.setup_socket()
 
-  def pull(self):
-    self.puller.start()
-    while self.puller.status_queue.empty():
-      time.sleep(.001)
-    if not self.puller.status_queue.get() == 'FILE RECEIVED':
-      raise Exception
-    
+    self.msg = {'loc': 0,
+                'path': self.file}
+
+  def setup_socket(self):
+    self.context = zmq.Context()
+    self.socket = self.context.socket(zmq.REQ)
+    self.server = 'tcp://%s:%s' % (self.host, self.port)
+    self.socket.connect(self.server)
+
+  def check_file(self):
+    self.socket.send_pyobj(self.msg)
+    data = self.socket.recv_pyobj()
+    if data['body'] != 'FILE INCOMING':
+      return data['body']
+    if os.path.isfile(self.destpath):
+      return 'FILE EXISTS'
+    try:
+      self.dest = open(self.destpath, 'w+')  
+    except:
+      return 'CANNOT WRITE FILE'
+    return data['body']
+
+  def get_file(self):
+    if not self.check_file() == "FILE INCOMING":
+      return
+    crc = 0 
+    while True:
+      self.socket.send_pyobj(self.msg)
+      data = self.socket.recv_pyobj()
+      if data['body']:
+        crcnew = zlib.crc32(data['body'], crc)
+        if crcnew == data['crc']:
+          crc = crcnew
+          self.dest.write(data['body'])
+          self.msg['loc'] = self.dest.tell()
+        else:
+          continue
+      else:
+        self.dest.close()
+        self.msg['loc'] = 'DONE'
+        self.socket.send_pyobj(self.msg)
+        break   
