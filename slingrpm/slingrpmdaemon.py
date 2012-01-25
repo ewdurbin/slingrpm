@@ -19,11 +19,13 @@ class SlingRPMDaemonProcess(Process):
     super(SlingRPMDaemonProcess, self).__init__()
     self.config = config
     self.listenport = self.config.get('SlingRPMDaemon', 'listenport')
+    self.filequeue = []
 
   def catcher_routine(self, catcher_url, catcher_context, catcherout_url, catcherout_context):
+    print "starting catcher"
     socket = catcher_context.socket(zmq.REP)
     socket.connect(catcher_url)
-    socket1 = catcherout_context.socket(zmq.REQ)
+    socket1 = catcherout_context.socket(zmq.PUSH)
     socket1.connect(catcherout_url)
     while True:
       msg = socket.recv_pyobj()
@@ -40,7 +42,6 @@ class SlingRPMDaemonProcess(Process):
           catcher.get_file()
           outmsg = {'body': 'FILE ADDED'}
           socket1.send_pyobj(outmsg)
-          print socket1.recv_pyobj()
         except:
           import traceback
           ret['body'] = "ERROR"
@@ -51,33 +52,25 @@ class SlingRPMDaemonProcess(Process):
 
       socket.send_pyobj(ret)
 
-  def repoupdater_routine(self, catcherout_url, repoupdater_url, context):
-    socket = context.socket(zmq.REP)
-    socket.connect(catcherout_url)
+  def repoupdater_routine(self, repoupdater_url, repoupdater_context):
+    print "starting repoupdater"
+    socket = repoupdater_context.socket(zmq.PULL)
+    socket.connect(repoupdater_url)
     while True:
       msg = socket.recv_pyobj()
-      ret = {}
-
+      print msg
       if msg['body'] == "ALIVE?":
-        ret['body'] = "YES"
-
+        print "recieved ping"
+        
       if msg['body'] == "FILE ADDED":
-        print msg
-        ret['body'] = "KTHNKXBYE"
+        self.filequeue.append(time.time())
+        print self.filequeue
 
-      if ret == {}:
-        ret['body'] = "UNKNOWN"
-
-      socket.send_pyobj(ret)
+      if len(self.filequeue) >= 10:
+        print "updating repo"
+        self.filequeue = []
 
   def run(self):
-#    self.context = zmq.Context(1)
-#    self.clients = self.context.socket(zmq.ROUTER)
-#    self.catchers = self.context.socket(zmq.DEALER)
-#    self.context0 = zmq.Context(1)
-#    self.catchersout = self.context0.socket(zmq.ROUTER)
-#    self.repoupdater = self.context0.socket(zmq.DEALER)
-
     self.clients_url = 'tcp://*:%s' % self.listenport
     self.catchers_url = 'ipc:///var/run/slingrpm/catchers'
 
@@ -91,23 +84,13 @@ class SlingRPMDaemonProcess(Process):
     self.catchersout_url = 'ipc:///var/run/slingrpm/catchersout'
     self.repoupdater_url = 'ipc:///var/run/slingrpm/repoupdater'
 
-    repoupdater = ThreadDevice(zmq.QUEUE, zmq.ROUTER, zmq.DEALER)
-    repoupdater.setsockopt_in(zmq.IDENTITY, 'repoROUTER')
+    repoupdater = ThreadDevice(zmq.STREAMER, zmq.PULL, zmq.PUSH)
+    repoupdater.daemon = False
+    repoupdater.setsockopt_in(zmq.IDENTITY, 'repoPUSH')
     repoupdater.bind_in(self.catchersout_url)
-    repoupdater.setsockopt_out(zmq.IDENTITY, 'repoDEALER')
+    repoupdater.setsockopt_out(zmq.IDENTITY, 'repoPULL')
     repoupdater.bind_out(self.repoupdater_url)
     repoupdater.start()
-
-#    try:
-#      self.clients.bind(self.clients_url)
-#      self.catchers.bind(self.catchers_url)
-#      self.catchersout.bind(self.catchersout_url)
-#      self.repoupdater.bind(self.repoupdater_url)
-#    except:
-#      raise
-
-#    zmq.device(zmq.QUEUE, self.clients, self.catchers)
-#    zmq.device(zmq.QUEUE, self.catchersout, self.repoupdater)
 
     for i in range(4):
  
@@ -119,12 +102,12 @@ class SlingRPMDaemonProcess(Process):
       thread.start()
 
     thread = threading.Thread(target=self.repoupdater_routine,
-                              args=(self.catchersout_url,
-                                    self.repoupdater_url,
+                              args=(self.repoupdater_url,
                                     repoupdater.context_factory(), ))
+    thread.start()
 
     while True:
-      time.sleep(1)
+      time.sleep(5)
 
 class SlingRPMDaemon:
 
