@@ -108,12 +108,8 @@ class Slinger:
     status = self.fileserver.done_queue.get()
     if status == "SUCCESS":
       print "published %s to repo %s" % (self.file, self.targetrepo)
-      sys.exit(0)
+      return 0
     if status == "FAILURE":
       print "failed to publish"
-      import os
-      os.abort()
+      return 1
 
-if __name__ == "__main__":
-  slinger = Slinger()
-  slinger.sling()
