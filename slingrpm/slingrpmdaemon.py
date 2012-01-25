@@ -72,7 +72,7 @@ class SlingRPMDaemonProcess(Process):
       if len(self.filequeue) > 0:
         mintime = min(self.filequeue, key=lambda x: x[0])
         print mintime[0]
-        if time.time() - mintime[0] >= 10 and not poller.poll(timeout=10):
+        if len(self.filequeue) >= 15 or time.time() - mintime[0] >= 10 and not poller.poll(timeout=10):
           print "updating repo"
           repos = []
           for item in self.filequeue:
