@@ -35,11 +35,11 @@ class Catcher:
     if data['body'] != 'FILE INCOMING':
       return data['body']
     if os.path.isfile(self.destpath):
-      return 'FILE EXISTS'
+      raise Exception('FILE EXISTS')
     try:
       self.incoming = open(self.incomingpath, 'w+')  
     except:
-      return 'CANNOT WRITE FILE'
+      raise Exception('CANNOT WRITE FILE')
     return data['body']
 
   def get_file(self):
