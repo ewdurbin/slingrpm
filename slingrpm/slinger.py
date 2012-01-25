@@ -94,7 +94,7 @@ class Slinger:
     if resp:
       if resp['body'] == "ERROR":
         print resp['exception']
-        return 1
+        raise Exception('ERROR on server, see stacktrace above')
     
       if resp['body'] == "UNKNOWN":
         print resp['body']
