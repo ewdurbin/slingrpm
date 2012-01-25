@@ -12,6 +12,7 @@ import zlib
 from slingconfig import SlingConfig
 
 from catcher import Catcher
+from yumrepo import YumRepo
 
 class SlingRPMDaemonProcess(Process):
 
@@ -40,7 +41,7 @@ class SlingRPMDaemonProcess(Process):
           catcher = Catcher(config, msg['host'], msg['port'], msg['path'])
           ret['body'] = "PULLING FILE"
           catcher.get_file()
-          outmsg = {'body': 'FILE ADDED'}
+          outmsg = {'body': 'FILE ADDED', 'repo': msg['repo']}
           socket1.send_pyobj(outmsg)
         except:
           import traceback
@@ -56,19 +57,32 @@ class SlingRPMDaemonProcess(Process):
     print "starting repoupdater"
     socket = repoupdater_context.socket(zmq.PULL)
     socket.connect(repoupdater_url)
+    poller = zmq.core.poll.Poller()
+    poller.register(socket, flags=zmq.POLLIN)
     while True:
-      msg = socket.recv_pyobj()
-      print msg
-      if msg['body'] == "ALIVE?":
-        print "recieved ping"
-        
-      if msg['body'] == "FILE ADDED":
-        self.filequeue.append(time.time())
-        print self.filequeue
+      if poller.poll(timeout=100):
+        msg = socket.recv_pyobj()
+        if msg['body'] == "FILE ADDED":
+          self.filequeue.append((time.time(), msg['repo']))
+        elif msg['body'] == "ALIVE?":
+          print "ping recieved"
+          continue
 
-      if len(self.filequeue) >= 10:
-        print "updating repo"
-        self.filequeue = []
+      """ check condition """
+      if len(self.filequeue) > 0:
+        mintime = min(self.filequeue, key=lambda x: x[0])
+        print mintime[0]
+        if time.time() - mintime[0] >= 10 and not poller.poll(timeout=10):
+          print "updating repo"
+          repos = []
+          for item in self.filequeue:
+            repos.append(item[1])
+          for repo in set(repos):
+            yumrepo = YumRepo(repo)
+            yumrepo.updatemetadata()
+          self.filequeue = []
+      time.sleep(.1)
+ 
 
   def run(self):
     self.clients_url = 'tcp://*:%s' % self.listenport

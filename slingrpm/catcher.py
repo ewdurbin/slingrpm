@@ -3,6 +3,7 @@ import slingrpm
 import zmq
 import zlib
 import os.path
+import shutil
 
 class Catcher:
 
@@ -13,6 +14,9 @@ class Catcher:
     self.file = file
     self.filename = os.path.basename(file)
     self.destpath = os.path.join(self.config.packagedir, self.filename)
+    self.incomingpath = os.path.join(self.config.packagedir, '.slingrpmincoming', self.filename)
+    if not os.path.isdir(os.path.dirname(self.incomingpath)):
+      os.makedirs(os.path.dirname(self.incomingpath))
 
     self.setup_socket()
 
@@ -33,7 +37,7 @@ class Catcher:
     if os.path.isfile(self.destpath):
       return 'FILE EXISTS'
     try:
-      self.dest = open(self.destpath, 'w+')  
+      self.incoming = open(self.incomingpath, 'w+')  
     except:
       return 'CANNOT WRITE FILE'
     return data['body']
@@ -49,12 +53,13 @@ class Catcher:
         crcnew = zlib.crc32(data['body'], crc)
         if crcnew == data['crc']:
           crc = crcnew
-          self.dest.write(data['body'])
-          self.msg['loc'] = self.dest.tell()
+          self.incoming.write(data['body'])
+          self.msg['loc'] = self.incoming.tell()
         else:
           continue
       else:
-        self.dest.close()
+        self.incoming.close()
+        shutil.move(self.incomingpath, self.destpath) 
         self.msg['loc'] = 'DONE'
         self.socket.send_pyobj(self.msg)
         break   

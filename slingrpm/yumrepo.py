@@ -4,9 +4,9 @@ import os.path
 from slingrpm import SlingConfig
 
 def execute(cmd):
-  fd = open('execute.log', 'a')
-  retcode = subprocess.check_call([cmd], stderr=fd, stdout=fd, shell=True)
-  fd.close()
+#  fd = open('execute.log', 'a')
+  retcode = subprocess.check_call([cmd], shell=True)
+#  fd.close()
   return retcode
 
 class YumRepo:
