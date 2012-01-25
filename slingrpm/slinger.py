@@ -85,24 +85,35 @@ class Slinger:
     self.socket.send_pyobj(msg)
     poller = zmq.Poller()
     poller.register(self.socket, zmq.POLLIN)
+    resp = None
     if poller.poll(3*1000):
       resp = self.socket.recv_pyobj()
     else:
       print "Daemon did not respond within 3s"
-      return 1
 
-    if resp['body'] == "ERROR":
-      print resp['exception']
-      return 1
-  
-    if resp['body'] == "UNKNOWN":
-      print resp['body']
-      return 1
- 
-    print "connected to slingrpmdaemon, pushing file..." 
+    if resp:
+      if resp['body'] == "ERROR":
+        print resp['exception']
+        return 1
+    
+      if resp['body'] == "UNKNOWN":
+        print resp['body']
+        return 1
+   
+      print "connected to slingrpmdaemon, pushing file..." 
+
     while self.fileserver.done_queue.empty():
       time.sleep(.1)
-  
+    
     status = self.fileserver.done_queue.get()
     if status == "SUCCESS":
       print "published %s to repo %s" % (self.file, self.targetrepo)
+      sys.exit(0)
+    if status == "FAILURE":
+      print "failed to publish"
+      import os
+      os.abort()
+
+if __name__ == "__main__":
+  slinger = Slinger()
+  slinger.sling()

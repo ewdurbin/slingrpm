@@ -3,6 +3,7 @@ from multiprocessing import Process
 from multiprocessing import Queue 
 import sys
 import time
+import os
 import os.path
 import zlib
 
@@ -49,6 +50,11 @@ class SlingerFileServerProcess(Process):
     self.port_queue.put(port)
 
   def check_path(self):
+    poller = zmq.core.poll.Poller()
+    poller.register(self.socket, flags=zmq.POLLIN)
+    if not poller.poll(timeout=3*1000):
+      self.done_queue.put("FAILURE")
+      return False
     file = self.socket.recv_pyobj()
     if not os.path.isfile(file['path']):
       self.socket.send_pyobj({'body': 'NO FILE'})
