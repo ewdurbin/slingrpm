@@ -61,7 +61,6 @@ class SlingerFileServerProcess(Process):
     return True
 
   def serve_loop(self, fh):
-    print "entering serve loop"
     ret = {'body': None,
            'loc': None,
            'crc': 0}
