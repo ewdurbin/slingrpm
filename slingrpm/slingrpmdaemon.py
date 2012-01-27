@@ -21,13 +21,12 @@ class SlingRPMDaemonProcess(Process):
     self.config = config
     self.listenport = self.config.get('SlingRPMDaemon', 'listenport')
     self.filequeue = []
+    self.catcher_queue = []
 
-  def catcher_routine(self, catcher_url, catcher_context, catcherout_url, catcherout_context):
+  def catcher_routine(self, catcher_url, catcher_context):
     print "starting catcher"
     socket = catcher_context.socket(zmq.REP)
     socket.connect(catcher_url)
-    socket1 = catcherout_context.socket(zmq.PUSH)
-    socket1.connect(catcherout_url)
     while True:
       msg = socket.recv_pyobj()
       ret = {}
@@ -39,10 +38,8 @@ class SlingRPMDaemonProcess(Process):
         try:
           config = SlingConfig(os.path.join(msg['repo'], '.slingrpm.conf'))
           catcher = Catcher(config, msg['host'], msg['port'], msg['path'])
-          ret['body'] = "PULLING FILE"
-          catcher.get_file()
-          outmsg = {'body': 'FILE ADDED', 'repo': msg['repo']}
-          socket1.send_pyobj(outmsg)
+          ret['body'] = "QUEUING FILE PULL"
+          self.catcher_queue.append(catcher)
         except:
           import traceback
           ret['body'] = "ERROR"
@@ -53,6 +50,21 @@ class SlingRPMDaemonProcess(Process):
 
       socket.send_pyobj(ret)
 
+  def puller_routine(self, catcherout_url, catcherout_context):
+    print "starting puller"
+    socket1 = catcherout_context.socket(zmq.PUSH)
+    socket1.connect(catcherout_url)
+    while True:
+      if len(self.catcher_queue):
+        try:
+          catcher = self.catcher_queue.pop(0)
+          catcher.get_file()
+          outmsg = {'body': 'FILE ADDED', 'repo': catcher.config.repolocation}
+          socket1.send_pyobj(outmsg)
+        except:
+          print "exception caught in puller routine"
+      time.sleep(.01)
+
   def repoupdater_routine(self, repoupdater_url, repoupdater_context):
     print "starting repoupdater"
     socket = repoupdater_context.socket(zmq.PULL)
@@ -60,7 +72,7 @@ class SlingRPMDaemonProcess(Process):
     poller = zmq.core.poll.Poller()
     poller.register(socket, flags=zmq.POLLIN)
     while True:
-      if poller.poll(timeout=100):
+      if poller.poll(timeout=1*1000):
         msg = socket.recv_pyobj()
         if msg['body'] == "FILE ADDED":
           self.filequeue.append((time.time(), msg['repo']))
@@ -105,12 +117,16 @@ class SlingRPMDaemonProcess(Process):
     repoupdater.bind_out(self.repoupdater_url)
     repoupdater.start()
 
-    for i in range(4):
  
+    for i in range(2):
       thread = threading.Thread(target=self.catcher_routine,
                                 args=(self.catchers_url,
-                                      catchers.context_factory(),
-                                      self.catchersout_url,
+                                      catchers.context_factory(), ))
+      thread.start()
+
+    for i in range(4):
+      thread = threading.Thread(target=self.puller_routine,
+                                args=(self.catchersout_url,
                                       repoupdater.context_factory(), ))
       thread.start()
 

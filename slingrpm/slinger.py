@@ -86,10 +86,10 @@ class Slinger:
     poller = zmq.Poller()
     poller.register(self.socket, zmq.POLLIN)
     resp = None
-    if poller.poll(3*1000):
+    if poller.poll(10*1000):
       resp = self.socket.recv_pyobj()
     else:
-      print "Daemon did not respond within 3s"
+      print "Daemon did not respond within 10s"
 
     if resp:
       if resp['body'] == "ERROR":

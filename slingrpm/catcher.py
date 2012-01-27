@@ -28,9 +28,13 @@ class Catcher:
     self.socket = self.context.socket(zmq.REQ)
     self.server = 'tcp://%s:%s' % (self.host, self.port)
     self.socket.connect(self.server)
+    self.poller = zmq.Poller()
+    self.poller.register(self.socket, zmq.POLLIN)
 
   def check_file(self):
     self.socket.send_pyobj(self.msg)
+    if not self.poller.poll(30*1000):
+      raise Exception('slinger did not respond')
     data = self.socket.recv_pyobj()
     if data['body'] != 'FILE INCOMING':
       return data['body']

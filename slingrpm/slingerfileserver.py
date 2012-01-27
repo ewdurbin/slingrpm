@@ -52,7 +52,7 @@ class SlingerFileServerProcess(Process):
   def check_path(self):
     poller = zmq.core.poll.Poller()
     poller.register(self.socket, flags=zmq.POLLIN)
-    if not poller.poll(timeout=3*1000):
+    if not poller.poll(timeout=10*1000):
       self.done_queue.put("FAILURE")
       return False
     file = self.socket.recv_pyobj()
