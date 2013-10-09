@@ -20,7 +20,7 @@ class SlingRPMDaemonProcess(Process):
     self.pull_queue = pull_queue
 
   def runloop(self):
-    poller = zmq.core.poll.Poller()
+    poller = zmq.Poller()
     poller.register(self.socket, flags=zmq.POLLIN)
     while True:
       poller.poll()
