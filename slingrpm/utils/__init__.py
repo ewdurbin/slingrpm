@@ -65,3 +65,12 @@ def throttle(interval=1):
             # Drop this like a hot potato.
         return _wrapped
     return wrapped
+
+
+def hash_file(afile, blocksize=65536):
+    hasher = hashlib.md5()
+    buf = afile.read(blocksize)
+    while len(buf) > 0:
+        hasher.update(buf)
+        buf = afile.read(blocksize)
+    return hasher.hexdigest()
