@@ -4,9 +4,9 @@ import os.path
 from slingrpm import SlingConfig
 
 def execute(cmd):
-  fd = open('execute.log', 'a')
-  retcode = subprocess.check_call([cmd], stderr=fd, stdout=fd, shell=True)
-  fd.close()
+#  fd = open('execute.log', 'a')
+  retcode = subprocess.check_call([cmd], shell=True)
+#  fd.close()
   return retcode
 
 class YumRepo:
@@ -17,10 +17,10 @@ class YumRepo:
     if not os.path.isfile(os.path.join(repopath, '.slingrpm.conf')):
       raise Exception
     self.repopath = repopath
-    self.slingconfig = SlingConfig(os.path.join(repopath, '.slingrpm.conf'))
+    self.config = SlingConfig(os.path.join(repopath, '.slingrpm.conf'))
 
   def updatemetadata(self):
     try:
-      return execute('createrepo %s %s' % (self.slingconfig.repolocation, self.slingconfig.createrepoopts))
+      return execute('createrepo %s %s' % (self.config.repolocation, self.config.createrepoopts))
     except:
       raise

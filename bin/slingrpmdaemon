@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+
+import slingrpm
+import optparse
+
+if __name__ == "__main__":
+  daemon = slingrpm.SlingRPMDaemon()
+  parser = optparse.OptionParser()
+  parser.add_option('-d', '--daemon', dest='daemon', default=False, action='store_true', help="Run as daemon")
+  options, args = parser.parse_args()
+  if options.daemon:
+    slingrpm.daemonize()
+  daemon.start()

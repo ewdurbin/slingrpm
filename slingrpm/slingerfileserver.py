@@ -3,6 +3,7 @@ from multiprocessing import Process
 from multiprocessing import Queue 
 import sys
 import time
+import os
 import os.path
 import zlib
 
@@ -49,14 +50,17 @@ class SlingerFileServerProcess(Process):
     self.port_queue.put(port)
 
   def check_path(self):
+    poller = zmq.core.poll.Poller()
+    poller.register(self.socket, flags=zmq.POLLIN)
+    if not poller.poll(timeout=10*1000):
+      self.done_queue.put("FAILURE")
+      return False
     file = self.socket.recv_pyobj()
     if not os.path.isfile(file['path']):
       self.socket.send_pyobj({'body': 'NO FILE'})
-      self.socket.close()
       return False
     if not os.path.dirname(file['path']).startswith(self.servedir):
       self.socket.send_pyobj({'body': 'CANNOT SERVE THAT'})
-      self.socket.close()
       return False
     self.servefile = file['path']
     self.socket.send_pyobj({'body': 'FILE INCOMING'})
@@ -70,8 +74,6 @@ class SlingerFileServerProcess(Process):
     while True:
       msg = self.socket.recv_pyobj()
       if msg['loc'] == 'DONE':
-        ret['body'] = 'OKAYBYE'
-        self.socket.send_pyobj(ret)
         break
       ret['body'] = fh.read(msg['loc'])
       ret['crc'] = zlib.crc32(ret['body'],ret['crc'])
@@ -79,8 +81,7 @@ class SlingerFileServerProcess(Process):
   
       self.socket.send_pyobj(ret)
 
-    self.done_queue.put(True)
-    self.socket.close()
+    self.done_queue.put("SUCCESS")
 
   def run(self):
     self.setup_connection()

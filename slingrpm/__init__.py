@@ -5,7 +5,6 @@ from slingsetup import SlingSetup
 from slingerfileserver import SlingerFileServer
 from slingerfileserver import SlingerFileServerProcess
 from slingerfileserver import FileHandler
-from catcherfilepuller import CatcherFilePuller
 from yumrepo import YumRepo
 from slingrpmdaemon import SlingRPMDaemon
 from exceptions import NoRepoException
@@ -41,7 +40,7 @@ def daemonize():
         print "second fork failed"
         sys.exit(1)
 
-    dev_null = open('/home/ernestd/slingrpm.log', 'rw')
+    dev_null = open('/dev/null', 'rw')
     os.dup2(dev_null.fileno(), sys.stdin.fileno())
     os.dup2(dev_null.fileno(), sys.stdout.fileno())
     os.dup2(dev_null.fileno(), sys.stderr.fileno())

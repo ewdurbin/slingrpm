@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+
+import zmq
+
+def send_msg_get_rsp(port, msg):
+  context = zmq.Context()
+  socket = context.socket(zmq.REQ)
+  socket.connect('tcp://%s:%s' % ('127.0.0.1', port))
+  socket.send_pyobj(msg)
+  resp = socket.recv_pyobj()
+  socket.close()
+  return resp 
+
+def send_msg_get_rsp_ipc(path, msg):
+  context = zmq.Context()
+  socket = context.socket(zmq.PUSH)
+  socket.setsockopt(zmq.LINGER,-1)
+  socket.connect('ipc://%s' % (path))
+  socket.send_pyobj(msg)
+  socket.close()
+
+if __name__ == "__main__":
+  msg = {'body': "ALIVE?"}
+  print send_msg_get_rsp(64666, msg)
+  send_msg_get_rsp_ipc('/var/run/slingrpm/catchersout', msg)

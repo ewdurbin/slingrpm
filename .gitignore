@@ -5,3 +5,4 @@ lib
 include
 slingrpm/test/TempServer.log
 execute.log
+repos/*
