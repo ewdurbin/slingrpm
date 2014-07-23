@@ -1,8 +1,10 @@
 
-MANIFEST
+/MANIFEST
+/slingrpm.egg-info
 
-.env
-env
+/.env
+/env
 
-.tox
+/.tox
 
+/dump.rdb

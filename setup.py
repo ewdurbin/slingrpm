@@ -2,7 +2,9 @@ import sys
 
 from distutils.core import setup
 
-requirements = []
+requirements = ['celery[redis]',
+                'Flask',
+                'requests']
 test_requirements = []
 
 setup(
@@ -13,7 +15,9 @@ setup(
     author_email='ewdurbin@gmail.com',
     description='a lightweight manager for pushing, removing, and promoting rpms in a remote yum repository',
     url='https://github.com/ewdurbin/slingrpm',
-    packages=['slingrpm'],
+    packages=['slingrpm',
+              'slingrpm.server',
+              'slingrpm.tasks'],
     scripts=[],
     test_suite='tests',
     install_requires=requirements,

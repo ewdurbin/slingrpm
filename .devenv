@@ -1,0 +1,2 @@
+CELERY_BROKER_URI=redis://localhost/0
+CELERY_RESULT_BACKEND=redis://localhost/1
