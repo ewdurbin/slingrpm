@@ -49,7 +49,9 @@ def submit():
         raise PackageExists('package name exists in specified repository')
     os.rename(stage_filename, target_filename)
 
-    return jsonify({'response': 'got it'})
+    task = update_repo.apply_async(args=[repository])
+
+    return jsonify({'response': 'got it', 'update_repo_task': task.id})
 
 if __name__ == "__main__":
     APP.run(debug=True)

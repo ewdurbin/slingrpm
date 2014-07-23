@@ -5,7 +5,8 @@ from distutils.core import setup
 requirements = ['celery[redis]',
                 'Flask',
                 'pyrpm-02strich',
-                'requests']
+                'requests',
+                'simpleflock']
 test_requirements = []
 
 setup(
