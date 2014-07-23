@@ -20,7 +20,7 @@ setup(
     packages=['slingrpm',
               'slingrpm.server',
               'slingrpm.tasks'],
-    scripts=[],
+    scripts=['scripts/slingrpm'],
     test_suite='tests',
     install_requires=requirements,
     tests_require=test_requirements,
