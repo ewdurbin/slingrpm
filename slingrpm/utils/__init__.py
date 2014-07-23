@@ -1,5 +1,17 @@
 
+import inspect
+import hashlib
+
 from functools import wraps
+
+
+def hash_func(func, *args, **kwargs):
+    """
+    create a hash to identify unique function call
+    """
+    string = ''.join([str(inspect.getmodule(func)), func.__name__,
+                      str(args), str(kwargs)])
+    return int(hashlib.md5(string).hexdigest(), 16)
 
 
 """
