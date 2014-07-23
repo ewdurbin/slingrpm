@@ -4,6 +4,7 @@ from distutils.core import setup
 
 requirements = ['celery[redis]',
                 'Flask',
+                'pyrpm-02strich',
                 'requests']
 test_requirements = []
 

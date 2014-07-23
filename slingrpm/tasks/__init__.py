@@ -1,5 +1,5 @@
-from .stat_file import stat_file
+from .update_repo import update_repo
 
 __all__ = [
-    stat_file.__name__,
+    update_repo.__name__,
 ]

@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 
 from slingrpm.server.exceptions import *
 from slingrpm.utils import hash_file
-from slingrpm.tasks import stat_file
+from slingrpm.tasks import update_repo
 
 logging_handler = logging.StreamHandler()
 
@@ -39,7 +39,7 @@ def submit():
     stage_filename = os.path.join(STAGE_DIR, filename)
     target_filename = os.path.join(repository, package.filename)
     package.save(stage_filename)
-    recvd_md5hash = hash_file(open(stage_filename), 'rb')
+    recvd_md5hash = hash_file(open(stage_filename, 'rb'))
 
     if md5hash != recvd_md5hash:
         raise MD5Mismatch('recieved file does not match supplied md5')
