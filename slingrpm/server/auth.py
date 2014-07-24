@@ -2,7 +2,7 @@
 from functools import wraps
 
 from flask import request
-from flask import Response
+from flask import jsonify
 
 from slingrpm.utils import iam
 
@@ -50,7 +50,8 @@ class IAMPassthroughAuth(object):
             auth = request.headers.get('X-Slingrpm-Authorization')
             print auth
             if not self.validate(auth):
-                print 'bogus'
-                return Response('Not Authorized', 401, {'IAMPassthroughAuth': 'Invalid'})
+                resp = jsonify({'Not Authorized': 'IAMPassthroughAuth Invalid'})
+                resp.status_code = 401
+                return resp
             return wrapped(*args, **kwargs)
         return wrapper
