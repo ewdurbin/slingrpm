@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import sys
 
 from optparse import OptionParser
@@ -7,6 +8,7 @@ from optparse import OptionParser
 import requests
 
 from slingrpm.utils import hash_file
+from slingrpm.utils import iam
 
 parser = OptionParser()
 parser.add_option('-f', '--file',
@@ -21,6 +23,9 @@ parser.add_option('-u', '--slingrpm-uri',
                   help="URI of the slingrpm endpoint",
                   default=None, action="store", type="string",
                   dest="slingrpm_uri")
+parser.add_option('-i', '--iam-auth',
+                  help="use IAM authentication, requires AWS creds",
+                  action="store_true", dest="iam_auth")
 
 (options, args) = parser.parse_args()
 
@@ -39,8 +44,19 @@ if len(_errors) > 0:
     parser.print_help()
     sys.exit(1)
 
+headers = {}
+
+if options.iam_auth:
+    access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+    secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+    if access_key is None or secret_key is None:
+        print 'No AWS creds are available.'
+        sys.exit(1)
+    auth_query_url = iam.generate_get_user_query(access_key, secret_key)
+    headers['X-IAMPassthroughAuth-Query'] = auth_query_url
+
 files = {'package': open(options.rpm_file, 'rb')}
 data = {'repository': options.repo_dir,
         'md5hash': hash_file(open(options.rpm_file, 'rb'))}
-r = requests.post(options.slingrpm_uri, files=files, data=data)
+r = requests.post(options.slingrpm_uri, files=files, data=data, headers=headers)
 print r.text

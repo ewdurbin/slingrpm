@@ -6,7 +6,8 @@ requirements = ['celery[redis]',
                 'Flask',
                 'pyrpm-02strich',
                 'requests',
-                'simpleflock']
+                'simpleflock',
+                'xmltodict']
 test_requirements = []
 
 setup(
