@@ -1,10 +1,7 @@
 
-import base64
 import datetime
 import hashlib
 import hmac
-import os
-import sys
 import urllib
 
 import xmltodict
@@ -16,15 +13,18 @@ host = 'iam.amazonaws.com'
 region = 'us-east-1'
 endpoint = 'https://iam.amazonaws.com'
 
+
 def sign(key, msg):
     return hmac.new(key, msg.encode('utf-8'), hashlib.sha256).digest()
 
-def getSignatureKey(key, dateStamp, regionName, serviceName):
-    kDate = sign(('AWS4' + key).encode('utf-8'), dateStamp)
-    kRegion = sign(kDate, regionName)
-    kService = sign(kRegion, serviceName)
-    kSigning = sign(kService, 'aws4_request')
-    return kSigning
+
+def get_signature_key(key, date_stamp, region_name, service_name):
+    k_date = sign(('AWS4' + key).encode('utf-8'), date_stamp)
+    k_region = sign(k_date, region_name)
+    k_service = sign(k_region, service_name)
+    k_signing = sign(k_service, 'aws4_request')
+    return k_signing
+
 
 def generate_get_user_query(access_key=None, secret_key=None):
     if access_key is None or secret_key is None:
@@ -59,7 +59,7 @@ def generate_get_user_query(access_key=None, secret_key=None):
     string_to_sign = '\n'.join([algorithm, amz_date, credential_scope,
                                 hashlib.sha256(canonical_request).hexdigest()])
 
-    signing_key = getSignatureKey(secret_key, datestamp, region, service)
+    signing_key = get_signature_key(secret_key, datestamp, region, service)
 
     signature = hmac.new(signing_key, (string_to_sign).encode("utf-8"),
                          hashlib.sha256).hexdigest()
@@ -70,13 +70,14 @@ def generate_get_user_query(access_key=None, secret_key=None):
 
     return request_url
 
+
 def execute_get_user_query(query):
     r = requests.get(query)
     if r.status_code != 200:
         raise Exception
-    response = xmltodict.parse(r.text)
-    user_name = response['GetUserResponse']['GetUserResult']['User']['UserName']
-    user_id = response['GetUserResponse']['GetUserResult']['User']['UserId']
-    arn = response['GetUserResponse']['GetUserResult']['User']['Arn']
+    resp = xmltodict.parse(r.text)
+    user_name = resp['GetUserResponse']['GetUserResult']['User']['UserName']
+    user_id = resp['GetUserResponse']['GetUserResult']['User']['UserId']
+    arn = resp['GetUserResponse']['GetUserResult']['User']['Arn']
     return {'user_name': user_name, 'user_id': user_id,
-            'user_account': arn.split(':')[4]}
+            'account': arn.split(':')[4]}

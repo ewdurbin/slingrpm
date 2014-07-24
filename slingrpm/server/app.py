@@ -1,5 +1,4 @@
 
-import hashlib
 import logging
 import os
 import tempfile
@@ -9,7 +8,11 @@ from flask import jsonify
 from flask import request
 from werkzeug.utils import secure_filename
 
-from slingrpm.server.exceptions import *
+from slingrpm.server.exceptions import FlaskException
+from slingrpm.server.exceptions import MD5Mismatch
+from slingrpm.server.exceptions import NoSuchRepository
+from slingrpm.server.exceptions import PackageExists
+
 from slingrpm.server.auth import NoOpAuth
 from slingrpm.utils import hash_file
 from slingrpm.tasks import update_repo
@@ -23,15 +26,20 @@ auth_handler = NoOpAuth()
 if os.getenv('SLINGRPM_AWS_AUTH', False) == '1':
     from slingrpm.server.auth import IAMPassthroughAuth
 
-    AWS_ACCESS_KEYS = os.getenv('SLINGRPM_AWS_ACCESS_KEYS', '').split(',')
-    AWS_USERS = os.getenv('SLINGRPM_AWS_USERS', '').split(',')
-    AWS_ACCOUNTS = os.getenv('SLINGRPM_AWS_ACCOUNTS', '').split(',')
+    AWS_USER_IDS = [x for x in
+                    os.getenv('SLINGRPM_AWS_USER_IDS', '').split(',') if x]
+    AWS_USER_NAMES = [x for x in
+                      os.getenv('SLINGRPM_AWS_USER_NAMES', '').split(',') if x]
+    AWS_ACCOUNTS = [x for x in
+                    os.getenv('SLINGRPM_AWS_ACCOUNTS', '').split(',') if x]
 
-    auth_handler = IAMPassthroughAuth(AWS_USERS, AWS_ACCESS_KEYS, AWS_ACCOUNTS)
+    auth_handler = IAMPassthroughAuth(AWS_USER_IDS, AWS_USER_NAMES,
+                                      AWS_ACCOUNTS)
 
 authenticate = auth_handler.authenticate
 
 STAGE_DIR = os.getenv('SLINGRPM_STAGE_DIR', tempfile.gettempdir())
+
 
 @APP.errorhandler(FlaskException)
 def handle_flask_error(error):
@@ -39,10 +47,12 @@ def handle_flask_error(error):
     response.status_code = error.status_code
     return response
 
+
 @APP.route('/', methods=['GET'])
 def root_route():
-    body = { "title": "slingrpm server" }
+    body = {"title": "slingrpm server"}
     return jsonify(body)
+
 
 @APP.route('/submit', methods=['GET', 'POST'])
 @authenticate

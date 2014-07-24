@@ -1,8 +1,6 @@
 
 import hashlib
 
-from functools import wraps
-
 
 def hash_file(afile, blocksize=65536):
     hasher = hashlib.md5()

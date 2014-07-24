@@ -18,7 +18,7 @@ def update_repo(repository_dir):
             for root, dirs, files in os.walk(repository_dir):
                 for filename in files:
                     if filename.endswith(".rpm"):
-                         rpms.append(os.path.join(root, filename))
+                        rpms.append(os.path.join(root, filename))
 
             repository = YumRepository(repository_dir)
             packages_keys = [key for key, value in repository.packages()]

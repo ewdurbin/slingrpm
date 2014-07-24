@@ -6,6 +6,7 @@ from flask import jsonify
 
 from slingrpm.utils import iam
 
+
 class NoOpAuth(object):
 
     def __init__(self):
@@ -17,31 +18,38 @@ class NoOpAuth(object):
             return wrapped(*args, **kwargs)
         return wrapper
 
+
 class IAMPassthroughAuth(object):
 
-    def __init__(self, allowed_users=None, allowed_access_keys=None,
-                 allowed_accounts=None):
-        if allowed_users is None:
-            allowed_users = []
-        if allowed_access_keys is None:
-            allowed_access_keys = []
-        if allowed_accounts is None:
-            allowed_accounts = []
+    def __init__(self, user_ids=None, user_names=None, accounts=None):
+        self.valid_user_ids = user_ids
+        self.valid_user_names = user_names
+        self.valid_accounts = accounts
 
-        self.allowed_users = allowed_users
-        self.allowed_access_keys = allowed_access_keys
-        self.allowed_accounts = allowed_accounts
+        self.check_user_ids = True
+        self.check_user_names = True
+        self.check_accounts = True
+
+        if len(self.valid_user_ids) == 0 or self.valid_user_ids is None:
+            self.check_user_ids = False
+        if len(self.valid_user_names) == 0 or self.valid_user_names is None:
+            self.check_user_names = False
+        if len(self.valid_accounts) == 0 or self.valid_accounts is None:
+            self.check_accounts = False
 
     def validate(self, query):
         try:
             identity = iam.execute_get_user_query(query)
-            if len(self.allowed_accounts) > 0 and identity['user_account'] not in self.allowed_accounts:
-                return False
-            if len(self.allowed_access_keys) > 0 or len(self.allowed_users) > 0:
-                key_is_authorized = self.allowed_access_keys.__contains__(identity['user_id'])
-                user_is_authorized = self.allowed_users.__contains__(identity['user_name'])
-                return key_is_authorized or user_is_authorized
-        except (Exception) as exc:
+            account_good = True
+            user_name_good = True
+            user_id_good = True
+            if self.check_accounts:
+                account_good = identity['account'] in self.valid_accounts
+            if self.check_user_ids or self.check_user_names:
+                user_id_good = identity['user_id'] in self.valid_user_ids
+                user_name_good = identity['user_name'] in self.valid_user_names
+            return account_good and (user_id_good or user_name_good)
+        except (Exception):
             return False
 
     def authenticate(self, wrapped):
@@ -49,11 +57,13 @@ class IAMPassthroughAuth(object):
         def wrapper(*args, **kwargs):
             auth = request.headers.get('X-IAMPassthroughAuth-Query')
             if auth is None:
-                resp = jsonify({'Not Authorized': 'No X-IAMPassthroughAuth-Query supplied'})
+                resp = jsonify({'Not Authorized':
+                                'No X-IAMPassthroughAuth-Query supplied'})
                 resp.status_code = 401
                 return resp
             if not self.validate(auth):
-                resp = jsonify({'Not Authorized': 'IAMPassthroughAuth Invalid'})
+                resp = jsonify({'Not Authorized':
+                                'IAMPassthroughAuth Invalid'})
                 resp.status_code = 401
                 return resp
             return wrapped(*args, **kwargs)
