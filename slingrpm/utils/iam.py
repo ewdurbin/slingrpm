@@ -78,4 +78,5 @@ def execute_get_user_query(query):
     user_name = response['GetUserResponse']['GetUserResult']['User']['UserName']
     user_id = response['GetUserResponse']['GetUserResult']['User']['UserId']
     arn = response['GetUserResponse']['GetUserResult']['User']['Arn']
-    return {'user_name': user_name, 'user_id': user_id, 'arn': arn}
+    return {'user_name': user_name, 'user_id': user_id,
+            'user_account': arn.split(':')[4]}
