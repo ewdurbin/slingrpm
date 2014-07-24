@@ -35,7 +35,7 @@ class IAMPassthroughAuth(object):
     def validate(self, query):
         try:
             identity = iam.execute_get_user_query(query)
-            if len(self.allowed_accounts) > 0 and identity['account'] not in self.allowed_accounts:
+            if len(self.allowed_accounts) > 0 and identity['user_account'] not in self.allowed_accounts:
                 return False
             if len(self.allowed_access_keys) > 0 or len(self.allowed_users) > 0:
                 key_is_authorized = self.allowed_access_keys.__contains__(identity['user_id'])
@@ -47,8 +47,11 @@ class IAMPassthroughAuth(object):
     def authenticate(self, wrapped):
         @wraps(wrapped)
         def wrapper(*args, **kwargs):
-            auth = request.headers.get('X-Slingrpm-Authorization')
-            print auth
+            auth = request.headers.get('X-IAMPassthroughAuth-Query')
+            if auth is None:
+                resp = jsonify({'Not Authorized': 'No X-IAMPassthroughAuth-Query supplied'})
+                resp.status_code = 401
+                return resp
             if not self.validate(auth):
                 resp = jsonify({'Not Authorized': 'IAMPassthroughAuth Invalid'})
                 resp.status_code = 401
