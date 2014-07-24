@@ -1,3 +1,4 @@
 honcho
 gunicorn
 tox
+-e .
