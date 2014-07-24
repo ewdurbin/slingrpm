@@ -28,7 +28,7 @@ def getSignatureKey(key, dateStamp, regionName, serviceName):
 
 def generate_get_user_query(access_key=None, secret_key=None):
     if access_key is None or secret_key is None:
-        sys.exit()
+        raise Exception
 
     t = datetime.datetime.utcnow()
     amz_date = t.strftime('%Y%m%dT%H%M%SZ')
