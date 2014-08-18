@@ -13,7 +13,7 @@ from slingrpm.celery import CELERY_APP
 @CELERY_APP.task(name="slingrpm.tasks.update_repo")
 def update_repo(repository_dir):
     try:
-        with SimpleFlock(os.path.join(repository_dir, 'lock'), timeout=3):
+        with SimpleFlock(os.path.join(repository_dir, '.slingrpm.lock'), timeout=3):
             rpms = []
             for root, dirs, files in os.walk(repository_dir):
                 for filename in files:
