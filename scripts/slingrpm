@@ -9,6 +9,7 @@ import requests
 
 from slingrpm.utils import hash_file
 from slingrpm.utils import iam
+from slingrpm.repo_config import parse_public_config
 
 
 def vararg_callback(option, opt_str, value, parser):
@@ -47,6 +48,10 @@ parser.add_option('-u', '--slingrpm-uri',
                   help="URI of the slingrpm endpoint",
                   default=None, action="store", type="string",
                   dest="slingrpm_uri")
+parser.add_option('-c', '--repo-config',
+                  help="URI of slingrpm config",
+                  default=None, action="store", type="string",
+                  dest="slingrpm_config_uri")
 parser.add_option('-i', '--iam-auth',
                   help="use IAM authentication, requires AWS creds",
                   action="store_true", dest="iam_auth")
@@ -55,17 +60,37 @@ parser.add_option('-i', '--iam-auth',
 
 _errors = []
 
-if not options.rpm_files:
+CONFIG_URI = True
+CONFIG_PAIR = True
+
+if options.rpm_files is None:
     _errors.append('RPM_FILE required')
-if not options.repo_dir:
-    _errors.append('REPO_DIR required')
-if not options.slingrpm_uri:
-    _errors.append('SLINGRPM_URI required')
+if options.slingrpm_config_uri is None:
+    CONFIG_URI = False
+if options.repo_dir is None and options.slingrpm_uri is None:
+    CONFIG_PAIR = False
+if not CONFIG_URI and not CONFIG_PAIR:
+    _errors.append('One of SLINGRPM_CONFIG_URI or REPO_DIR and SLINGRPM_URI'
+                    ' is required')
+if CONFIG_PAIR:
+    if options.repo_dir is None:
+        _errors.append('REPO_DIR required')
+    if options.slingrpm_uri is None:
+        _errors.append('SLINGRPM_URI required')
+else:
+    try:
+        r = requests.get(options.slingrpm_config_uri)
+        public_config = parse_public_config(r.text)
+        options.repo_dir = public_config.get('public', 'repository_dir')
+        options.slingrpm_uri = public_config.get('public', 'submission_url')
+    except Exception:
+        _errors.append('Unable to load config from %s' %
+                       (options.slingrpm_config_uri))
 
 if len(_errors) > 0:
+    parser.print_help()
     for error in _errors:
         print error
-    parser.print_help()
     sys.exit(1)
 
 headers = {}
