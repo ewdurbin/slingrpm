@@ -76,6 +76,7 @@ class S3Syncer(object):
         bucket, key = self.open_s3()
         os.path.walk(self.DIRECTORY, self.upload_s3,
             (bucket, key, self.AWS_BUCKET_NAME))
+        self.prune_s3((bucket, key, self.AWS_BUCKET_NAME))
 
     def open_s3(self):
         """
@@ -146,3 +147,12 @@ class S3Syncer(object):
                 self.upload_count += 1
 
             file_obj.close()
+
+    def prune_s3(self, arg):
+        bucket, key, bucket_name = arg
+        prefix = self.prefix.lstrip('/')
+        for s3_key in bucket.list(prefix=prefix):
+            relative_key = s3_key.name.lstrip(prefix)
+            if not os.path.isfile(os.path.join(self.DIRECTORY, relative_key.lstrip(os.sep))):
+                print "s3_key %s no longer exists locally, Deleting..." % (s3_key.name)
+                s3_key.delete()
