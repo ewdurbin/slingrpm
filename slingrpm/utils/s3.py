@@ -41,6 +41,7 @@ Services API keys.
 
 """
 import datetime
+import logging
 import mimetypes
 import os
 import time
@@ -51,6 +52,8 @@ try:
     import boto.exception
 except ImportError:
     raise ImportError, "The boto Python library is not installed."
+
+logger = logging.getLogger()
 
 class S3Syncer(object):
 
@@ -119,13 +122,13 @@ class S3Syncer(object):
                 if local_datetime < s3_datetime:
                     self.skip_count += 1
                     if self.verbosity > 1:
-                        print "File %s hasn't been modified since last " \
-                            "being uploaded" % (file_key)
+                        logger.info("File %s hasn't been modified since last "
+                                    "being uploaded", file_key)
                     continue
 
             # File is newer, let's process and upload
             if self.verbosity > 0:
-                print "Uploading %s..." % (file_key)
+                logger.info("Uploading %s...", file_key)
 
             content_type = mimetypes.guess_type(filename)[0]
             if content_type:
@@ -138,10 +141,8 @@ class S3Syncer(object):
                 key.name = file_key
                 key.set_contents_from_string(filedata, headers, replace=True)
                 key.make_public()
-            except boto.s3.connection.S3CreateError, e:
-                print "Failed: %s" % e
             except Exception, e:
-                print e
+                logger.exception(e)
                 raise
             else:
                 self.upload_count += 1
@@ -154,5 +155,5 @@ class S3Syncer(object):
         for s3_key in bucket.list(prefix=prefix):
             relative_key = s3_key.name.lstrip(prefix)
             if not os.path.isfile(os.path.join(self.DIRECTORY, relative_key.lstrip(os.sep))):
-                print "s3_key %s no longer exists locally, Deleting..." % (s3_key.name)
+                logger.info("s3_key %s no longer exists locally, Deleting...", s3_key.name)
                 s3_key.delete()

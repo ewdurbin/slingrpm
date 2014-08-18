@@ -14,6 +14,8 @@ from slingrpm.tasks.sync_to_s3 import sync_to_s3
 
 @CELERY_APP.task(name="slingrpm.tasks.update_repo")
 def update_repo(repository_dir):
+    logger = update_repo.get_logger()
+    logger.info("Updating yum metadat for %s", repository_dir)
     try:
         with SimpleFlock(os.path.join(repository_dir, '.slingrpm.lock'),
                          timeout=3):
@@ -31,10 +33,12 @@ def update_repo(repository_dir):
             for rpm in rpms:
                 pkg = YumPackage(file(rpm))
                 if pkg.checksum not in packages_keys:
+                    logger.info("Adding %s", pkg.name)
                     repository.add_package(pkg)
 
             repository.save()
             if repo_config.getboolean('private', 's3_sync'):
+                logger.info('S3 sync enabled, enqueuing job')
                 bucket_name = repo_config.get('private', 's3_sync_bucket')
                 prefix = repo_config.get('private', 's3_sync_prefix')
                 job_args = (repository_dir, bucket_name, prefix)
