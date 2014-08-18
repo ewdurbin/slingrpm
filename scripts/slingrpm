@@ -10,11 +10,35 @@ import requests
 from slingrpm.utils import hash_file
 from slingrpm.utils import iam
 
+
+def vararg_callback(option, opt_str, value, parser):
+     assert value is None
+     value = []
+
+     def floatable(str):
+         try:
+             float(str)
+             return True
+         except ValueError:
+             return False
+
+     for arg in parser.rargs:
+         # stop on --foo like options
+         if arg[:2] == "--" and len(arg) > 2:
+             break
+         # stop on -a, but not on -3 or -3.0
+         if arg[:1] == "-" and len(arg) > 1 and not floatable(arg):
+             break
+         value.append(arg)
+
+     del parser.rargs[:len(value)]
+     setattr(parser.values, option.dest, value)
+
 parser = OptionParser()
 parser.add_option('-f', '--file',
-                  help="repostiory to update",
-                  default=None, action="store", type="string",
-                  dest="rpm_file")
+                  help="file(s) to upload",
+                  default=None, action="callback", callback=vararg_callback,
+                  dest="rpm_files")
 parser.add_option('-r', '--repo_dir',
                   help="repostiory to update",
                   default=None, action="store", type="string",
@@ -31,7 +55,7 @@ parser.add_option('-i', '--iam-auth',
 
 _errors = []
 
-if not options.rpm_file:
+if not options.rpm_files:
     _errors.append('RPM_FILE required')
 if not options.repo_dir:
     _errors.append('REPO_DIR required')
@@ -55,8 +79,9 @@ if options.iam_auth:
     auth_query_url = iam.generate_get_user_query(access_key, secret_key)
     headers['X-IAMPassthroughAuth-Query'] = auth_query_url
 
-files = {'package': open(options.rpm_file, 'rb')}
-data = {'repository': options.repo_dir,
-        'md5hash': hash_file(open(options.rpm_file, 'rb'))}
-r = requests.post(options.slingrpm_uri, files=files, data=data, headers=headers)
-print r.text
+for rpm_file in options.rpm_files:
+    files = {'package': open(rpm_file, 'rb')}
+    data = {'repository': options.repo_dir,
+            'md5hash': hash_file(open(rpm_file, 'rb'))}
+    r = requests.post(options.slingrpm_uri, files=files, data=data, headers=headers)
+    print r.text
