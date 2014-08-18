@@ -35,7 +35,7 @@ def update_repo(repository_dir):
             for rpm in rpms:
                 pkg = YumPackage(file(rpm))
                 if pkg.checksum not in packages_keys:
-                    logger.info("Adding %s", pkg.name)
+                    logger.info("Adding %s", rpm)
                     repository.add_package(pkg)
 
             repository.save()
