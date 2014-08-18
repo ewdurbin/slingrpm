@@ -12,7 +12,9 @@ from slingrpm.utils.s3 import S3Syncer
 def sync_to_s3(repository_dir, bucket_name, prefix):
     try:
         with SimpleFlock(os.path.join(repository_dir, '.slingrpm.lock'), timeout=3):
-            syncer = S3Syncer(repository_dir, bucket_name, prefix)
+            exclude_list = ['.slingrpm.cfg', '.slingrpm.lock']
+            syncer = S3Syncer(repository_dir, bucket_name, prefix,
+                              exclude=exclude_list)
             syncer.sync_s3()
     except (IOError) as exc:
         raise update_repo.retry(exc=exc, max_retries=1)

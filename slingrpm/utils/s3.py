@@ -54,7 +54,7 @@ except ImportError:
 
 class S3Syncer(object):
 
-    def __init__(self, local_path, s3_bucket, s3_prefix=None):
+    def __init__(self, local_path, s3_bucket, s3_prefix=None, exclude=None):
         self.AWS_BUCKET_NAME = s3_bucket
         self.DIRECTORY = local_path
         if s3_prefix is None:
@@ -62,6 +62,9 @@ class S3Syncer(object):
         self.prefix = s3_prefix
         if not self.prefix.startswith('/'):
             self.prefix = "/" + self.prefix
+        if self.exclude is None:
+            exclude = []
+        self.exclude = exclude
         self.verbosity = 100
         self.upload_count = 0
         self.skip_count = 0
@@ -97,6 +100,9 @@ class S3Syncer(object):
             filename = os.path.join(dirname, file)
             if os.path.isdir(filename):
                 continue # Don't try to upload directories
+
+            if os.path.basename(filename) in self.exclude:
+                continue
 
             file_key = filename[len(dirname):]
             if self.prefix:
