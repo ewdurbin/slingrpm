@@ -7,10 +7,12 @@ from simpleflock import SimpleFlock
 from slingrpm.celery import CELERY_APP
 from slingrpm.utils.s3 import S3Syncer
 
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
 
 @CELERY_APP.task(name="slingrpm.tasks.sync_to_s3")
 def sync_to_s3(repository_dir, bucket_name, prefix):
-    logger = sync_to_s3.get_logger()
     logger.info("Syncing %s to %s/%s", repository_dir, bucket_name, prefix)
     try:
         with SimpleFlock(os.path.join(repository_dir, '.slingrpm.lock'), timeout=3):

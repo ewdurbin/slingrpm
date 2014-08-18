@@ -11,10 +11,12 @@ from slingrpm.celery import CELERY_APP
 from slingrpm.repo_config import load_private_config
 from slingrpm.tasks.sync_to_s3 import sync_to_s3
 
+from celery.utils.log import get_task_logger
+
+logger = get_task_logger(__name__)
 
 @CELERY_APP.task(name="slingrpm.tasks.update_repo")
 def update_repo(repository_dir):
-    logger = update_repo.get_logger()
     logger.info("Updating yum metadat for %s", repository_dir)
     try:
         with SimpleFlock(os.path.join(repository_dir, '.slingrpm.lock'),
