@@ -9,7 +9,7 @@ from simpleflock import SimpleFlock
 
 from slingrpm.celery import CELERY_APP
 from slingrpm.repo_config import load_private_config
-from slingrpm.tasks import sync_to_s3
+from slingrpm.tasks.sync_to_s3 import sync_to_s3
 
 
 @CELERY_APP.task(name="slingrpm.tasks.update_repo")
