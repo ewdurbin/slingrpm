@@ -62,7 +62,7 @@ class S3Syncer(object):
         self.prefix = s3_prefix
         if not self.prefix.startswith('/'):
             self.prefix = "/" + self.prefix
-        if self.exclude is None:
+        if exclude is None:
             exclude = []
         self.exclude = exclude
         self.verbosity = 100
@@ -104,7 +104,7 @@ class S3Syncer(object):
             if os.path.basename(filename) in self.exclude:
                 continue
 
-            file_key = filename[len(dirname):]
+            file_key = filename[len(self.DIRECTORY):]
             if self.prefix:
                 file_key = os.path.join(self.prefix, file_key.lstrip('/'))
 
