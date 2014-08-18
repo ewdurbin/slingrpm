@@ -1,6 +1,7 @@
 
 import logging
 import os
+import shutil
 import tempfile
 
 from flask import Flask
@@ -73,7 +74,7 @@ def submit():
             raise NoSuchRepository('the specified repository does not exist')
         if os.path.exists(target_filename):
             raise PackageExists('package name exists in specified repository')
-        os.rename(stage_filename, target_filename)
+        shutil.move(stage_filename, target_filename)
 
         task = update_repo.apply_async(args=[repository])
 
