@@ -81,6 +81,31 @@ class S3Syncer(object):
             (bucket, key, self.AWS_BUCKET_NAME))
         self.prune_s3((bucket, key, self.AWS_BUCKET_NAME))
 
+    def sync_local(self):
+        bucket = self.open_s3()[0]
+        for key in bucket.list(prefix=self.prefix.lstrip('/')):
+            key_string = str(key.key)
+            parent_folder = os.sep.join(key_string.split("/")[1:-1])
+            parent_folder = os.path.join(self.DIRECTORY, parent_folder)
+            key_path = os.path.join(parent_folder, key_string.split("/")[-1])
+            if not os.path.exists(parent_folder):
+                os.makedirs(parent_folder)
+            if not os.path.exists(key_path):
+                save_to = open(key_path, "wb")
+                key.get_file(save_to)
+                save_to.close()
+                logger.info("saved: %s", key_path)
+            else:
+                s3_md5 = key.etag.strip('"')
+                local_md5 = hashlib.md5(open(key_path, "rb").read()).hexdigest()
+                if s3_md5 == local_md5:
+                    logger.info("already exists, file the same: %s", key_path)
+                else:
+                    save_to = open(key_path, "wb")
+                    key.get_file(save_to)
+                    save_to.close()
+                    logger.warn("file changed, overwrote: %s" % key_path)
+
     def open_s3(self):
         """
         Opens connection to S3 returning bucket and key
