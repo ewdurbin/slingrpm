@@ -178,7 +178,7 @@ class S3Syncer(object):
         bucket, key, bucket_name = arg
         prefix = self.prefix.lstrip('/')
         for s3_key in bucket.list(prefix=prefix):
-            relative_key = s3_key.name.lstrip(prefix)
+            relative_key = s3_key.name.replace(prefix, '', 1)
             if not os.path.isfile(os.path.join(self.DIRECTORY, relative_key.lstrip(os.sep))):
                 logger.info("s3_key %s no longer exists locally, Deleting...", s3_key.name)
                 s3_key.delete()

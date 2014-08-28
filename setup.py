@@ -14,7 +14,7 @@ test_requirements = []
 
 setup(
     name='slingrpm',
-    version='1.0.0b2',
+    version='1.0.0b3',
     license='MIT',
     author="Ernest W. Durbin III",
     author_email='ewdurbin@gmail.com',
