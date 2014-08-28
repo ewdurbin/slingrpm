@@ -2,8 +2,10 @@ import sys
 
 from distutils.core import setup
 
-requirements = ['celery[redis]',
+requirements = ['boto',
+                'celery[redis]',
                 'Flask',
+                'gunicorn',
                 'pyrpm-02strich',
                 'requests',
                 'simpleflock',
@@ -12,7 +14,7 @@ test_requirements = []
 
 setup(
     name='slingrpm',
-    version='1.0.0b1',
+    version='1.0.0b2',
     license='MIT',
     author="Ernest W. Durbin III",
     author_email='ewdurbin@gmail.com',
